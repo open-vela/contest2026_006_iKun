@@ -7,7 +7,7 @@
       <!-- 时间信息 -->
       <div class="time-section">
         <text class="time-value">{{ course.startTime }}</text>
-        <text class="time-arrow">↓</text>
+        <text class="time-arrow">→</text>
         <text class="time-value">{{ course.endTime }}</text>
       </div>
 

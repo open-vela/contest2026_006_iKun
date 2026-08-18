@@ -53,7 +53,7 @@ export const courses = [
     startTime: '10:00',
     endTime: '11:40',
     classroom: '教五301',
-    weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+    weeks: [2, 4, 6, 8, 10, 12, 14, 16]
   },
   {
     id: 'course_006',
@@ -63,7 +63,7 @@ export const courses = [
     startTime: '14:00',
     endTime: '15:40',
     classroom: '教三401',
-    weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+    weeks: [1, 3, 5, 7, 9, 11, 13, 15]
   },
   {
     id: 'course_007',

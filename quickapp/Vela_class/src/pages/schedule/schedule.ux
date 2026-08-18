@@ -13,11 +13,17 @@
       <div class="mode-btn {{ mode === 'week' ? 'mode-active' : '' }}" onclick="switchMode('week')">
         <text class="mode-text {{ mode === 'week' ? 'mode-text-active' : '' }}">本周</text>
       </div>
+      <div class="mode-btn {{ mode === 'all' ? 'mode-active' : '' }}" onclick="switchMode('all')">
+        <text class="mode-text {{ mode === 'all' ? 'mode-text-active' : '' }}">全部</text>
+      </div>
     </div>
 
     <!-- 今日模式 -->
     <div if="{{ mode === 'today' }}" class="content">
-      <text class="sub-title">{{ todayTitle }}</text>
+      <div class="today-summary">
+        <text class="week-number">第{{ currentWeek }}周</text>
+        <text class="summary-text"> · {{ todayTitle }}</text>
+      </div>
       <div class="timeline">
         <div for="{{ todayCourses }}" class="timeline-item">
           <div class="timeline-time">
@@ -40,25 +46,73 @@
 
     <!-- 本周模式 -->
     <div if="{{ mode === 'week' }}" class="content">
-      <!-- 星期选择器 -->
-      <div class="day-selector">
-        <div for="{{ weekDays }}" class="day-btn {{ selectedDay === $item.value ? 'day-active' : '' }}" onclick="selectDay($item.value)">
-          <text class="day-text {{ selectedDay === $item.value ? 'day-text-active' : '' }}">{{ $item.label }}</text>
-          <text if="{{ $item.isToday }}" class="today-mark">今天</text>
+      <!-- 周次选择器 -->
+      <div class="week-selector-wrap">
+        <div class="week-selector">
+          <div class="week-arrow {{ selectedWeek <= 1 ? 'arrow-disabled' : '' }}" onclick="previousWeek">
+            <text class="arrow-text">‹</text>
+          </div>
+          <div class="week-center">
+            <text class="week-number">第{{ selectedWeek }}周</text>
+            <text if="{{ selectedWeek === currentWeek }}" class="current-mark">本周</text>
+          </div>
+          <div class="week-arrow {{ selectedWeek >= 16 ? 'arrow-disabled' : '' }}" onclick="nextWeek">
+            <text class="arrow-text">›</text>
+          </div>
         </div>
       </div>
 
-      <text class="sub-title">{{ weekDayTitle }} · {{ weekCourses.length }}节课</text>
+      <!-- 星期选择器 -->
+      <div class="day-selector">
+        <div class="month-label">
+          <text class="month-text">{{ displayMonth }}月</text>
+        </div>
+        <div for="{{ weekDays }}" class="day-btn {{ selectedDay === $item.value ? 'day-active' : '' }}" onclick="selectDay($item.value)">
+          <text class="day-text {{ selectedDay === $item.value ? 'day-text-active' : '' }}">{{ $item.label }}</text>
+          <text class="day-date {{ selectedDay === $item.value ? 'day-date-active' : '' }}">{{ $item.date }}</text>
+        </div>
+      </div>
+
+      <div class="week-summary">
+        <text class="week-summary-text">第{{ selectedWeek }}周 · {{ weekDayTitle }} · {{ weekCourses.length }}节课</text>
+      </div>
 
       <div class="week-list">
         <div for="{{ weekCourses }}" class="week-item" onclick="goToDetail($item.id)">
-          <text class="week-time {{ $item.status === 'finished' ? 'text-gray' : 'text-blue' }}">{{ $item.startTime }}</text>
-          <text class="week-name {{ $item.status === 'finished' ? 'text-gray' : '' }}">{{ $item.name }}</text>
-          <text class="week-location {{ $item.status === 'finished' ? 'text-gray' : '' }}">{{ $item.classroom }}</text>
+          <text class="week-time text-blue">{{ $item.startTime }}</text>
+          <text class="week-name">{{ $item.name }}</text>
+          <text class="week-location">{{ $item.classroom }}</text>
         </div>
       </div>
 
       <div if="{{ weekCourses.length === 0 }}" class="empty">
+        <text class="empty-text">该日无课</text>
+      </div>
+    </div>
+
+    <!-- 全部模式 -->
+    <div if="{{ mode === 'all' }}" class="content">
+      <!-- 星期选择器 -->
+      <div class="day-selector">
+        <div for="{{ weekDays }}" class="day-btn {{ selectedDay === $item.value ? 'day-active' : '' }}" onclick="selectDay($item.value)">
+          <text class="day-text {{ selectedDay === $item.value ? 'day-text-active' : '' }}">{{ $item.label }}</text>
+        </div>
+      </div>
+
+      <text class="sub-title">全部课程 · {{ allDayTitle }}</text>
+
+      <div class="week-list">
+        <div for="{{ allCourses }}" class="week-item">
+          <div class="all-item-info">
+            <text class="week-time text-blue">{{ $item.startTime }}</text>
+            <text class="week-name">{{ $item.name }}</text>
+            <text class="week-location">{{ $item.classroom }}</text>
+          </div>
+          <text class="week-tag">{{ $item.weeksText }}</text>
+        </div>
+      </div>
+
+      <div if="{{ allCourses.length === 0 }}" class="empty">
         <text class="empty-text">该日无课</text>
       </div>
     </div>
@@ -94,7 +148,7 @@
 }
 
 .mode-btn {
-  padding: 8px 25px;
+  padding: 8px 18px;
   border-radius: 18px;
 }
 
@@ -122,6 +176,144 @@
   color: #8F8F8F;
   margin-bottom: 12px;
   margin-left: 5px;
+}
+
+.today-summary {
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 12px;
+  margin-left: 5px;
+}
+
+.week-selector-wrap {
+  width: 400px;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.week-selector {
+  width: 230px;
+  height: 44px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.week-arrow {
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  background-color: #171717;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.arrow-disabled {
+  opacity: 0.3;
+}
+
+.arrow-text {
+  font-size: 24px;
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+.week-center {
+  width: 130px;
+  height: 40px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+
+.week-number {
+  font-size: 16px;
+  color: #4FA3FF;
+  font-weight: 600;
+}
+
+.current-mark {
+  font-size: 12px;
+  color: #4FA3FF;
+  margin-left: 6px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background-color: rgba(79, 163, 255, 0.2);
+}
+
+.summary-text {
+  font-size: 16px;
+  color: #8F8F8F;
+}
+
+.week-summary {
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 12px;
+  margin-left: 5px;
+}
+
+.week-summary-text {
+  font-size: 16px;
+  color: #8F8F8F;
+}
+
+.day-selector {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding: 0 5px;
+}
+
+.month-label {
+  width: 36px;
+  height: 55px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.month-text {
+  font-size: 13px;
+  color: #4FA3FF;
+  font-weight: 600;
+}
+
+.day-btn {
+  flex-direction: column;
+  align-items: center;
+  width: 46px;
+  height: 55px;
+  border-radius: 18px;
+  justify-content: center;
+}
+
+.day-active {
+  background-color: #4FA3FF;
+}
+
+.day-text {
+  font-size: 15px;
+  color: #8F8F8F;
+  font-weight: 600;
+}
+
+.day-text-active {
+  color: #FFFFFF;
+}
+
+.day-date {
+  font-size: 12px;
+  color: #666666;
+  margin-top: 2px;
+}
+
+.day-date-active {
+  color: #FFFFFF;
 }
 
 .timeline {
@@ -207,42 +399,6 @@
   font-weight: 600;
 }
 
-.day-selector {
-  flex-direction: row;
-  justify-content: space-between;
-  margin-bottom: 15px;
-  padding: 0 10px;
-}
-
-.day-btn {
-  flex-direction: column;
-  align-items: center;
-  width: 55px;
-  height: 50px;
-  border-radius: 20px;
-  justify-content: center;
-}
-
-.day-active {
-  background-color: #4FA3FF;
-}
-
-.day-text {
-  font-size: 16px;
-  color: #8F8F8F;
-  font-weight: 600;
-}
-
-.day-text-active {
-  color: #FFFFFF;
-}
-
-.today-mark {
-  font-size: 10px;
-  color: #4FA3FF;
-  margin-top: 2px;
-}
-
 .week-list {
   flex-direction: column;
 }
@@ -256,6 +412,11 @@
   margin-bottom: 8px;
 }
 
+.all-item-info {
+  flex: 1;
+  flex-direction: column;
+}
+
 .week-time {
   font-size: 16px;
   font-weight: 600;
@@ -267,12 +428,18 @@
   font-size: 18px;
   font-weight: 600;
   color: #FFFFFF;
-  flex: 1;
+  margin-bottom: 4px;
 }
 
 .week-location {
   font-size: 14px;
   color: #8F8F8F;
+}
+
+.week-tag {
+  font-size: 14px;
+  color: #B57BFF;
+  font-weight: 600;
 }
 
 .empty {
@@ -302,28 +469,37 @@
 
 <script>
 import router from '@system.router'
-import { getTodayCourses, getCoursesByWeekday, getCourseStatus, getCourseRemainingTime } from '../../common/schedule'
+import { getTodayCourses, getCoursesByWeekday, getAllCoursesByWeekday, formatCourseWeeks, getCourseStatus, getCourseRemainingTime } from '../../common/schedule'
 import { getNow, getWeekdayNumber } from '../../common/time'
 import { createGestureState, handleTouchStart, handleTouchMove, handleTouchEnd } from '../../common/gesture'
+
+// 调试用当前教学周
+// TODO: 后续接入真实学期配置后，根据学期开始日期自动计算 currentWeek
+const DEBUG_CURRENT_WEEK = 3
 
 const DEBUG_NOW = null
 
 export default {
   private: {
     mode: 'today',
+    currentWeek: DEBUG_CURRENT_WEEK,
+    selectedWeek: DEBUG_CURRENT_WEEK,
     selectedDay: 1,
+    displayMonth: 0,
     todayTitle: '',
     weekDayTitle: '',
+    allDayTitle: '',
     todayCourses: [],
     weekCourses: [],
+    allCourses: [],
     weekDays: [
-      { label: '一', value: 1, isToday: false },
-      { label: '二', value: 2, isToday: false },
-      { label: '三', value: 3, isToday: false },
-      { label: '四', value: 4, isToday: false },
-      { label: '五', value: 5, isToday: false },
-      { label: '六', value: 6, isToday: false },
-      { label: '日', value: 7, isToday: false }
+      { label: '一', value: 1, date: 0, month: 0, isToday: false },
+      { label: '二', value: 2, date: 0, month: 0, isToday: false },
+      { label: '三', value: 3, date: 0, month: 0, isToday: false },
+      { label: '四', value: 4, date: 0, month: 0, isToday: false },
+      { label: '五', value: 5, date: 0, month: 0, isToday: false },
+      { label: '六', value: 6, date: 0, month: 0, isToday: false },
+      { label: '日', value: 7, date: 0, month: 0, isToday: false }
     ],
     gesture: createGestureState()
   },
@@ -332,17 +508,44 @@ export default {
     const now = getNow(DEBUG_NOW)
     this.selectedDay = getWeekdayNumber(now)
 
-    // 标记今天
-    this.weekDays.forEach(d => {
-      d.isToday = d.value === this.selectedDay
-    })
-
+    this.updateWeekDates(now)
     this.loadTodayCourses(now)
     this.loadWeekCourses(now)
+    this.loadAllCourses()
+  },
+
+  // 计算 selectedWeek 对应的日期
+  updateWeekDates(now) {
+    const currentWeekday = getWeekdayNumber(now)
+    // 计算当前周的星期一日期
+    const mondayOffset = currentWeekday - 1
+    const monday = new Date(now)
+    monday.setDate(monday.getDate() - mondayOffset)
+
+    // 根据 selectedWeek 与 currentWeek 的差值计算目标周的星期一
+    const weekOffset = this.selectedWeek - this.currentWeek
+    const targetMonday = new Date(monday)
+    targetMonday.setDate(targetMonday.getDate() + weekOffset * 7)
+
+    // 更新 weekDays 的日期和月份
+    this.weekDays.forEach((d, index) => {
+      const date = new Date(targetMonday)
+      date.setDate(date.getDate() + index)
+      d.date = date.getDate()
+      d.month = date.getMonth() + 1
+      // 只有查看当前周时才标记今天
+      d.isToday = (this.selectedWeek === this.currentWeek) && (d.value === this.selectedDay)
+    })
+
+    // 根据 selectedDay 更新 displayMonth
+    const selectedDayItem = this.weekDays.find(d => d.value === this.selectedDay)
+    if (selectedDayItem) {
+      this.displayMonth = selectedDayItem.month
+    }
   },
 
   loadTodayCourses(now) {
-    const courses = getTodayCourses(now)
+    const courses = getTodayCourses(now, this.currentWeek)
     const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
     this.todayTitle = `${days[now.getDay()]} · 共${courses.length}节`
 
@@ -354,7 +557,7 @@ export default {
   },
 
   loadWeekCourses(now) {
-    const courses = getCoursesByWeekday(this.selectedDay)
+    const courses = getCoursesByWeekday(this.selectedDay, this.selectedWeek)
     const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
     const dayIndex = this.selectedDay === 7 ? 0 : this.selectedDay
     this.weekDayTitle = `${days[dayIndex]}`
@@ -365,14 +568,50 @@ export default {
     }))
   },
 
+  loadAllCourses() {
+    const courses = getAllCoursesByWeekday(this.selectedDay)
+    const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+    const dayIndex = this.selectedDay === 7 ? 0 : this.selectedDay
+    this.allDayTitle = `${days[dayIndex]}`
+
+    this.allCourses = courses.map(c => ({
+      ...c,
+      weeksText: formatCourseWeeks(c.weeks)
+    }))
+  },
+
   switchMode(mode) {
     this.mode = mode
   },
 
   selectDay(day) {
     this.selectedDay = day
+    // 根据 selectedDay 更新 displayMonth
+    const selectedDayItem = this.weekDays.find(d => d.value === day)
+    if (selectedDayItem) {
+      this.displayMonth = selectedDayItem.month
+    }
     const now = getNow(DEBUG_NOW)
     this.loadWeekCourses(now)
+    this.loadAllCourses()
+  },
+
+  previousWeek() {
+    if (this.selectedWeek > 1) {
+      this.selectedWeek -= 1
+      const now = getNow(DEBUG_NOW)
+      this.updateWeekDates(now)
+      this.loadWeekCourses(now)
+    }
+  },
+
+  nextWeek() {
+    if (this.selectedWeek < 16) {
+      this.selectedWeek += 1
+      const now = getNow(DEBUG_NOW)
+      this.updateWeekDates(now)
+      this.loadWeekCourses(now)
+    }
   },
 
   goToDetail(courseId) {

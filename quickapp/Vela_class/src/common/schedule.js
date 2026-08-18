@@ -20,7 +20,7 @@ export function getTodayCourses(now, currentWeek = 1) {
 }
 
 /**
- * 获取指定星期的课程
+ * 获取指定星期的课程（按教学周过滤）
  * @param {number} weekday 星期几（1-7）
  * @param {number} currentWeek 当前教学周
  * @returns {Array}
@@ -29,6 +29,49 @@ export function getCoursesByWeekday(weekday, currentWeek = 1) {
   return courses
     .filter(c => c.weekday === weekday && c.weeks.includes(currentWeek))
     .sort((a, b) => a.startTime.localeCompare(b.startTime))
+}
+
+/**
+ * 获取指定星期的所有课程（不按教学周过滤，用于全部模式）
+ * @param {number} weekday 星期几（1-7）
+ * @returns {Array}
+ */
+export function getAllCoursesByWeekday(weekday) {
+  return courses
+    .filter(c => c.weekday === weekday)
+    .sort((a, b) => a.startTime.localeCompare(b.startTime))
+}
+
+/**
+ * 格式化课程周次显示
+ * @param {Array} weeks 周次数组
+ * @returns {string}
+ */
+export function formatCourseWeeks(weeks) {
+  if (!weeks || weeks.length === 0) return ''
+
+  const totalWeeks = 16
+  const allWeeks = Array.from({ length: totalWeeks }, (_, i) => i + 1)
+
+  // 判断是否为全周课程（1-16周）
+  if (weeks.length === totalWeeks && allWeeks.every(w => weeks.includes(w))) {
+    return '1-16周'
+  }
+
+  // 判断是否为单周（奇数周）
+  const oddWeeks = allWeeks.filter(w => w % 2 === 1)
+  if (weeks.length === oddWeeks.length && oddWeeks.every(w => weeks.includes(w))) {
+    return '单周'
+  }
+
+  // 判断是否为双周（偶数周）
+  const evenWeeks = allWeeks.filter(w => w % 2 === 0)
+  if (weeks.length === evenWeeks.length && evenWeeks.every(w => weeks.includes(w))) {
+    return '双周'
+  }
+
+  // 不规则周次，显示具体周次
+  return weeks.join(',') + '周'
 }
 
 /**
