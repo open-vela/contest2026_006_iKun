@@ -1,0 +1,304 @@
+<template>
+  <div class="page" ontouchstart="onTouchStart" ontouchmove="onTouchMove" ontouchend="onTouchEnd">
+    <!-- 顶部标题 -->
+    <div class="header">
+      <text class="title">待办</text>
+    </div>
+
+    <!-- 今日待办 -->
+    <div if="{{ todayTasks.length > 0 }}" class="section">
+      <text class="section-title">今天 · {{ todayTasks.length }}</text>
+      <div class="task-list">
+        <div for="{{ todayTasks }}" class="task-item {{ $item.finished ? 'task-finished' : '' }}">
+          <div class="task-check {{ $item.finished ? 'check-done' : '' }}" onclick="toggleTask($item.id)">
+            <text class="check-icon">{{ $item.finished ? '●' : '○' }}</text>
+          </div>
+          <div class="task-info" onclick="goToDetail($item.id)">
+            <text class="task-name {{ $item.finished ? 'text-gray' : '' }}">{{ $item.title }}</text>
+            <text class="task-deadline {{ $item.countdown.isUrgent ? 'text-orange' : ($item.countdown.isCritical ? 'text-red' : 'text-gray') }}">
+              {{ $item.deadlineText }} · {{ $item.countdownText }}
+            </text>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 本周待办 -->
+    <div if="{{ weekTasks.length > 0 }}" class="section">
+      <text class="section-title">本周 · {{ weekTasks.length }}</text>
+      <div class="task-list">
+        <div for="{{ weekTasks }}" class="task-item">
+          <div class="task-check" onclick="toggleTask($item.id)">
+            <text class="check-icon">○</text>
+          </div>
+          <div class="task-info" onclick="goToDetail($item.id)">
+            <text class="task-name">{{ $item.title }}</text>
+            <text class="task-deadline text-gray">{{ $item.deadlineText }}</text>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 以后待办 -->
+    <div if="{{ futureTasks.length > 0 }}" class="section">
+      <text class="section-title">以后 · {{ futureTasks.length }}</text>
+      <div class="task-list">
+        <div for="{{ futureTasks }}" class="task-item">
+          <div class="task-check" onclick="toggleTask($item.id)">
+            <text class="check-icon">○</text>
+          </div>
+          <div class="task-info" onclick="goToDetail($item.id)">
+            <text class="task-name">{{ $item.title }}</text>
+            <text class="task-deadline text-gray">{{ $item.deadlineText }}</text>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 已完成 -->
+    <div if="{{ finishedTasks.length > 0 }}" class="section">
+      <text class="section-title">已完成</text>
+      <div class="task-list">
+        <div for="{{ finishedTasks }}" class="task-item task-finished">
+          <div class="task-check check-done">
+            <text class="check-icon">●</text>
+          </div>
+          <div class="task-info">
+            <text class="task-name text-gray">{{ $item.title }}</text>
+            <text class="task-deadline text-gray">{{ $item.deadlineText }}</text>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 空状态 -->
+    <div if="{{ todayTasks.length === 0 && weekTasks.length === 0 && futureTasks.length === 0 }}" class="empty">
+      <text class="empty-text">今天没有待办</text>
+    </div>
+  </div>
+</template>
+
+<style>
+.page {
+  flex-direction: column;
+  align-items: center;
+  background-color: #000000;
+  width: 466px;
+  height: 466px;
+  padding-top: 45px;
+}
+
+.header {
+  margin-bottom: 15px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.section {
+  width: 380px;
+  flex-direction: column;
+  margin-bottom: 15px;
+}
+
+.section-title {
+  font-size: 16px;
+  color: #8F8F8F;
+  margin-bottom: 10px;
+  margin-left: 5px;
+}
+
+.task-list {
+  flex-direction: column;
+}
+
+.task-item {
+  flex-direction: row;
+  align-items: center;
+  background-color: #171717;
+  border-radius: 20px;
+  padding: 12px 15px;
+  margin-bottom: 8px;
+}
+
+.task-finished {
+  opacity: 0.6;
+}
+
+.task-check {
+  width: 30px;
+  height: 30px;
+  border-radius: 15px;
+  background-color: #202020;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+}
+
+.check-done {
+  background-color: #B57BFF;
+}
+
+.check-icon {
+  font-size: 16px;
+  color: #FFFFFF;
+}
+
+.task-info {
+  flex: 1;
+  flex-direction: column;
+}
+
+.task-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #FFFFFF;
+  margin-bottom: 4px;
+}
+
+.task-deadline {
+  font-size: 14px;
+}
+
+.text-gray {
+  color: #666666;
+}
+
+.text-orange {
+  color: #FFA940;
+}
+
+.text-red {
+  color: #FF6B6B;
+}
+
+.empty {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100px;
+}
+
+.empty-text {
+  font-size: 18px;
+  color: #666666;
+}
+</style>
+
+<script>
+import router from '@system.router'
+import { getTodayTasks, getWeekTasks, getFutureTasks, getFinishedTasks, getTaskCountdown, formatTaskCountdown, toggleTaskStatus } from '../../common/task'
+import { getNow, parseDateTime } from '../../common/time'
+import { createGestureState, handleTouchStart, handleTouchMove, handleTouchEnd } from '../../common/gesture'
+
+const DEBUG_NOW = null
+
+export default {
+  private: {
+    todayTasks: [],
+    weekTasks: [],
+    futureTasks: [],
+    finishedTasks: [],
+    gesture: createGestureState()
+  },
+
+  onInit() {
+    this.loadTasks()
+  },
+
+  loadTasks() {
+    const now = getNow(DEBUG_NOW)
+
+    // 今日待办
+    this.todayTasks = getTodayTasks(now).map(t => ({
+      ...t,
+      deadlineText: this.formatDeadline(t.deadline),
+      countdown: getTaskCountdown(t, now),
+      countdownText: formatTaskCountdown(t, now)
+    }))
+
+    // 本周待办
+    this.weekTasks = getWeekTasks(now).map(t => ({
+      ...t,
+      deadlineText: this.formatDeadline(t.deadline),
+      countdown: getTaskCountdown(t, now),
+      countdownText: formatTaskCountdown(t, now)
+    }))
+
+    // 未来待办
+    this.futureTasks = getFutureTasks(now).map(t => ({
+      ...t,
+      deadlineText: this.formatDeadline(t.deadline),
+      countdown: getTaskCountdown(t, now),
+      countdownText: formatTaskCountdown(t, now)
+    }))
+
+    // 已完成
+    this.finishedTasks = getFinishedTasks().map(t => ({
+      ...t,
+      deadlineText: this.formatDeadline(t.deadline)
+    }))
+  },
+
+  formatDeadline(deadline) {
+    const date = parseDateTime(deadline)
+    const now = getNow(DEBUG_NOW)
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+
+    // 判断是否是今天
+    if (date.toDateString() === now.toDateString()) {
+      return `今天 ${hours}:${minutes}`
+    }
+
+    // 判断是否是明天
+    const tomorrow = new Date(now)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    if (date.toDateString() === tomorrow.toDateString()) {
+      return `明天 ${hours}:${minutes}`
+    }
+
+    // 其他日期
+    const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+    const month = date.getMonth() + 1
+    const day = date.getDate()
+    return `${month}月${day}日 ${days[date.getDay()]} ${hours}:${minutes}`
+  },
+
+  toggleTask(taskId) {
+    toggleTaskStatus(taskId)
+    this.loadTasks()
+  },
+
+  goToDetail(taskId) {
+    router.push({
+      uri: '/pages/task-detail',
+      params: {
+        taskId: taskId
+      }
+    })
+  },
+
+  onTouchStart(e) {
+    handleTouchStart(this.gesture, e)
+  },
+
+  onTouchMove(e) {
+    handleTouchMove(this.gesture, e)
+  },
+
+  onTouchEnd(e) {
+    if (handleTouchEnd(this.gesture, e)) {
+      router.back()
+    }
+  },
+
+  goBack() {
+    router.back()
+  }
+}
+</script>

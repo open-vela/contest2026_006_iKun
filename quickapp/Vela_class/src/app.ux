@@ -1,0 +1,14 @@
+<script>
+import { initStorage } from './common/storage'
+
+export default {
+  onCreate() {
+    console.log('App created')
+    // 初始化本地存储
+    initStorage()
+  },
+  onDestroy() {
+    console.log('App destroyed')
+  }
+}
+</script>

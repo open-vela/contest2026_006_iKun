@@ -1,0 +1,261 @@
+<template>
+  <div class="page" ontouchstart="onTouchStart" ontouchmove="onTouchMove" ontouchend="onTouchEnd">
+    <div if="{{ task }}" class="content">
+      <!-- 状态图标 -->
+      <div class="status-icon {{ task.finished ? 'icon-done' : 'icon-pending' }}">
+        <text class="icon-text">{{ task.finished ? '●' : '○' }}</text>
+      </div>
+
+      <!-- 任务名称 -->
+      <text class="task-name {{ task.finished ? 'text-gray' : '' }}">{{ task.title }}</text>
+
+      <!-- 课程信息 -->
+      <div class="info-row">
+        <text class="info-label">课程</text>
+        <text class="info-value">{{ task.course }}</text>
+      </div>
+
+      <!-- 类型信息 -->
+      <div class="info-row">
+        <text class="info-label">类型</text>
+        <text class="info-value">{{ taskType }}</text>
+      </div>
+
+      <!-- 截止时间 -->
+      <div class="info-row">
+        <text class="info-label">截止</text>
+        <text class="info-value">{{ deadlineText }}</text>
+      </div>
+
+      <!-- 倒计时 -->
+      <div if="{{ !task.finished }}" class="countdown-section">
+        <text class="countdown-text {{ countdown.isUrgent ? 'text-orange' : (countdown.isCritical ? 'text-red' : 'text-purple') }}">
+          {{ countdownText }}
+        </text>
+      </div>
+
+      <!-- 完成按钮 -->
+      <div class="action-btn {{ task.finished ? 'btn-undo' : 'btn-done' }}" onclick="toggleStatus">
+        <text class="btn-text">{{ task.finished ? '取消完成' : '标记完成' }}</text>
+      </div>
+    </div>
+
+    <div if="{{ !task }}" class="empty">
+      <text class="empty-text">任务不存在</text>
+    </div>
+  </div>
+</template>
+
+<style>
+.page {
+  flex-direction: column;
+  align-items: center;
+  background-color: #000000;
+  width: 466px;
+  height: 466px;
+  padding-top: 45px;
+}
+
+.content {
+  width: 380px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.status-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 30px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.icon-pending {
+  background-color: #202020;
+}
+
+.icon-done {
+  background-color: #B57BFF;
+}
+
+.icon-text {
+  font-size: 28px;
+  color: #FFFFFF;
+}
+
+.task-name {
+  font-size: 30px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-bottom: 25px;
+}
+
+.info-row {
+  flex-direction: row;
+  width: 380px;
+  margin-bottom: 12px;
+  padding: 15px 20px;
+  background-color: #171717;
+  border-radius: 20px;
+}
+
+.info-label {
+  font-size: 16px;
+  color: #8F8F8F;
+  width: 60px;
+}
+
+.info-value {
+  font-size: 18px;
+  color: #FFFFFF;
+  flex: 1;
+}
+
+.countdown-section {
+  width: 380px;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 20px;
+  padding: 20px;
+  background-color: #171717;
+  border-radius: 22px;
+}
+
+.countdown-text {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.action-btn {
+  width: 380px;
+  height: 50px;
+  border-radius: 25px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 25px;
+}
+
+.btn-done {
+  background-color: #B57BFF;
+}
+
+.btn-undo {
+  background-color: #202020;
+}
+
+.btn-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.text-gray {
+  color: #666666;
+}
+
+.text-purple {
+  color: #B57BFF;
+}
+
+.text-orange {
+  color: #FFA940;
+}
+
+.text-red {
+  color: #FF6B6B;
+}
+
+.empty {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+}
+
+.empty-text {
+  font-size: 20px;
+  color: #666666;
+}
+</style>
+
+<script>
+import router from '@system.router'
+import { getTasks, updateTaskStatus } from '../../common/storage'
+import { getTaskCountdown, formatTaskCountdown, getTaskTypeText } from '../../common/task'
+import { getNow, parseDateTime } from '../../common/time'
+import { createGestureState, handleTouchStart, handleTouchMove, handleTouchEnd } from '../../common/gesture'
+
+const DEBUG_NOW = null
+
+export default {
+  protected: {
+    taskId: ''
+  },
+
+  private: {
+    task: null,
+    taskType: '',
+    deadlineText: '',
+    countdown: { value: 0, unit: '', isUrgent: false, isCritical: false },
+    countdownText: '',
+    gesture: createGestureState()
+  },
+
+  onInit() {
+    this.loadTask()
+  },
+
+  loadTask() {
+    const now = getNow(DEBUG_NOW)
+    const tasks = getTasks()
+
+    // 查找任务
+    this.task = tasks.find(t => t.id === this.taskId)
+
+    if (this.task) {
+      this.taskType = getTaskTypeText(this.task.type)
+      this.deadlineText = this.formatDeadline(this.task.deadline)
+      this.countdown = getTaskCountdown(this.task, now)
+      this.countdownText = formatTaskCountdown(this.task, now)
+    }
+  },
+
+  formatDeadline(deadline) {
+    const date = parseDateTime(deadline)
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+    const month = date.getMonth() + 1
+    const day = date.getDate()
+    return `${month}月${day}日 ${days[date.getDay()]} ${hours}:${minutes}`
+  },
+
+  toggleStatus() {
+    if (this.task) {
+      updateTaskStatus(this.taskId, !this.task.finished)
+      this.loadTask()
+    }
+  },
+
+  onTouchStart(e) {
+    handleTouchStart(this.gesture, e)
+  },
+
+  onTouchMove(e) {
+    handleTouchMove(this.gesture, e)
+  },
+
+  onTouchEnd(e) {
+    if (handleTouchEnd(this.gesture, e)) {
+      router.back()
+    }
+  },
+
+  goBack() {
+    router.back()
+  }
+}
+</script>

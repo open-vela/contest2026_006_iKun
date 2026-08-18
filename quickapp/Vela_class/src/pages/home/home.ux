@@ -1,0 +1,432 @@
+<template>
+  <div class="page">
+    <!-- 顶部时间 -->
+    <div class="header">
+      <text class="time">{{ currentTime }}</text>
+      <text class="date">{{ currentDate }}</text>
+    </div>
+
+    <!-- 主卡片 -->
+    <div class="main-card {{ mainCardClass }}" onclick="goToCourseDetail">
+      <!-- 状态1: 下一节课 -->
+      <div if="{{ status === 'next' }}" class="card-content">
+        <text class="status-label status-blue">下一节课</text>
+        <text class="course-name">{{ nextCourse.name }}</text>
+        <text class="time-info">{{ nextCourse.startTime }} 开始</text>
+        <text class="location-info">{{ nextCourse.classroom }} · {{ nextCourse.teacher }}</text>
+        <text class="countdown-blue">{{ countdownText }}</text>
+      </div>
+
+      <!-- 状态2: 正在上课 -->
+      <div if="{{ status === 'ongoing' }}" class="card-content">
+        <text class="status-label status-green">正在上课</text>
+        <text class="course-name">{{ currentCourse.name }}</text>
+        <text class="time-info status-green">剩余 {{ remainingMinutes }} 分钟</text>
+        <text class="location-info">{{ currentCourse.classroom }} · {{ currentCourse.teacher }}</text>
+        <div class="progress-container">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ progress }}%"></div>
+          </div>
+          <text class="progress-text">{{ progressPercent }}%</text>
+        </div>
+      </div>
+
+      <!-- 状态3: 今日课程结束 -->
+      <div if="{{ status === 'finished' }}" class="card-content">
+        <text class="status-label status-gray">今日课程已结束</text>
+        <text class="next-label">{{ nextCourseLabel }}</text>
+        <text class="course-name">{{ nextCourse.name }}</text>
+        <text class="time-info">{{ nextCourse.startTime }} · {{ nextCourse.classroom }}</text>
+      </div>
+
+      <!-- 状态4: 今日无课 -->
+      <div if="{{ status === 'noClass' }}" class="card-content">
+        <text class="status-label status-gray">今日无课</text>
+        <div if="{{ nearestExam }}" class="exam-preview">
+          <text class="exam-label">最近考试还有</text>
+          <text class="exam-countdown">{{ examCountdown.value }} {{ examCountdown.unit }}</text>
+          <text class="exam-course">{{ nearestExam.course }}</text>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部摘要 -->
+    <div class="summary-row">
+      <!-- 课表入口 -->
+      <div class="summary-card schedule-card" onclick="goToSchedule">
+        <text class="summary-icon status-blue">课表</text>
+        <text class="summary-count status-blue">{{ todayCourseCount }} 节</text>
+      </div>
+
+      <!-- 考试摘要 -->
+      <div class="summary-card exam-card" onclick="goToExam">
+        <text class="summary-icon status-red">考试</text>
+        <text class="summary-count status-red">{{ examSummary.count }} 场</text>
+      </div>
+
+      <!-- 待办摘要 -->
+      <div class="summary-card task-card" onclick="goToTask">
+        <text class="summary-icon status-purple">待办</text>
+        <text class="summary-count status-purple">{{ taskSummary.todayCount }} 项</text>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style>
+.page {
+  flex-direction: column;
+  align-items: center;
+  background-color: #000000;
+  width: 466px;
+  height: 466px;
+  padding-top: 40px;
+  padding-bottom: 20px;
+}
+
+.header {
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.time {
+  font-size: 48px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.date {
+  font-size: 18px;
+  color: #A0A0A0;
+  margin-top: 3px;
+}
+
+.main-card {
+  width: 380px;
+  height: 165px;
+  border-radius: 28px;
+  background-color: #171717;
+  padding: 15px 20px;
+  margin-bottom: 15px;
+}
+
+.main-card-blue {
+  border: 1px solid rgba(79, 163, 255, 0.4);
+}
+
+.main-card-green {
+  border: 1px solid rgba(88, 214, 141, 0.4);
+}
+
+.card-content {
+  flex-direction: column;
+  justify-content: center;
+}
+
+.status-label {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.status-blue {
+  color: #4FA3FF;
+}
+
+.status-green {
+  color: #58D68D;
+}
+
+.status-red {
+  color: #FF6B6B;
+}
+
+.status-purple {
+  color: #B57BFF;
+}
+
+.status-gray {
+  color: #8F8F8F;
+}
+
+.course-name {
+  font-size: 30px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-bottom: 4px;
+}
+
+.time-info {
+  font-size: 22px;
+  color: #CFCFCF;
+  margin-bottom: 3px;
+}
+
+.location-info {
+  font-size: 16px;
+  color: #A0A0A0;
+  margin-bottom: 4px;
+}
+
+.countdown-blue {
+  font-size: 24px;
+  font-weight: 700;
+  color: #4FA3FF;
+}
+
+.countdown-green {
+  font-size: 28px;
+  font-weight: 700;
+  color: #58D68D;
+}
+
+.next-label {
+  font-size: 16px;
+  color: #8F8F8F;
+  margin-bottom: 4px;
+}
+
+.progress-container {
+  flex-direction: row;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.progress-bar {
+  width: 280px;
+  height: 8px;
+  border-radius: 4px;
+  background-color: #2B2B2B;
+}
+
+.progress-fill {
+  height: 8px;
+  border-radius: 4px;
+  background-color: #58D68D;
+}
+
+.progress-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: #58D68D;
+  margin-left: 10px;
+}
+
+.exam-preview {
+  flex-direction: column;
+  align-items: center;
+  margin-top: 15px;
+}
+
+.exam-label {
+  font-size: 16px;
+  color: #8F8F8F;
+}
+
+.exam-countdown {
+  font-size: 38px;
+  font-weight: 700;
+  color: #FF6B6B;
+  margin: 5px 0;
+}
+
+.exam-course {
+  font-size: 20px;
+  color: #FFFFFF;
+}
+
+.summary-row {
+  flex-direction: row;
+  justify-content: space-between;
+  width: 380px;
+}
+
+.summary-card {
+  width: 120px;
+  height: 75px;
+  border-radius: 22px;
+  background-color: #171717;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.schedule-card {
+  margin-right: 10px;
+}
+
+.exam-card {
+  margin-left: 5px;
+  margin-right: 5px;
+}
+
+.task-card {
+  margin-left: 10px;
+}
+
+.summary-icon {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.summary-count {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+</style>
+
+<script>
+import router from '@system.router'
+import { getCurrentCourse, getNextCourse, getNextCourseAcrossDays, getCourseProgress, getCourseRemainingTime, getTodayCourses, isTodayCoursesFinished } from '../../common/schedule'
+import { getNearestExam, getExamCountdown, getExamSummary } from '../../common/exam'
+import { getTaskSummary } from '../../common/task'
+import { getNow, formatTime, formatFullDate } from '../../common/time'
+
+// 调试模式：设置为 null 使用真实时间，设置为 Date 对象使用模拟时间
+const DEBUG_NOW = null
+// 示例：模拟正在上课 (10:30)
+// const DEBUG_NOW = new Date(2026, 7, 18, 10, 30, 0)
+// 示例：模拟今日课程结束 (18:00)
+// const DEBUG_NOW = new Date(2026, 7, 18, 18, 0, 0)
+// 示例：模拟今日无课（周日）
+// const DEBUG_NOW = new Date(2026, 7, 23, 10, 0, 0)
+
+export default {
+  private: {
+    currentTime: '',
+    currentDate: '',
+    status: 'next', // next, ongoing, finished, noClass
+    mainCardClass: '',
+    currentCourse: null,
+    nextCourse: null,
+    remainingMinutes: 0,
+    progress: 0,
+    progressPercent: 0,
+    countdownText: '',
+    nextCourseLabel: '',
+    nearestExam: null,
+    examCountdown: { value: 0, unit: '' },
+    examSummary: { count: 0, nearestCourse: null },
+    taskSummary: { todayCount: 0, urgentCount: 0 },
+    todayCourseCount: 0
+  },
+
+  onInit() {
+    this.updateTime()
+    this.updateStatus()
+    // 每秒更新时间
+    setInterval(() => {
+      this.updateTime()
+      this.updateStatus()
+    }, 1000)
+  },
+
+  updateTime() {
+    const now = getNow(DEBUG_NOW)
+    this.currentTime = formatTime(now)
+    this.currentDate = formatFullDate(now)
+  },
+
+  updateStatus() {
+    const now = getNow(DEBUG_NOW)
+
+    // 获取当前课程
+    const currentCourse = getCurrentCourse(now)
+    // 获取下一节课
+    const nextCourse = getNextCourse(now)
+    // 获取跨天的下一节课
+    const nextAcross = getNextCourseAcrossDays(now)
+    // 今日课程是否结束
+    const todayFinished = isTodayCoursesFinished(now)
+    // 今日课程列表
+    const todayCourses = getTodayCourses(now)
+
+    // 考试信息
+    const nearestExam = getNearestExam(now)
+    this.nearestExam = nearestExam
+    if (nearestExam) {
+      this.examCountdown = getExamCountdown(nearestExam, now)
+    }
+    this.examSummary = getExamSummary(now)
+
+    // 待办信息
+    this.taskSummary = getTaskSummary(now)
+
+    // 今日课程数量
+    this.todayCourseCount = todayCourses.length
+
+    // 判断状态
+    if (currentCourse) {
+      // 正在上课
+      this.status = 'ongoing'
+      this.mainCardClass = 'main-card-green'
+      this.currentCourse = currentCourse
+      this.remainingMinutes = getCourseRemainingTime(currentCourse, now)
+      this.progress = Math.round(getCourseProgress(currentCourse, now) * 100)
+      this.progressPercent = this.progress
+    } else if (nextCourse) {
+      // 有下一节课
+      this.status = 'next'
+      this.mainCardClass = 'main-card-blue'
+      this.nextCourse = nextCourse
+      const minutes = getCourseRemainingTime(nextCourse, now)
+      this.countdownText = `还有 ${minutes} 分钟`
+    } else if (todayFinished && todayCourses.length > 0) {
+      // 今日课程结束
+      this.status = 'finished'
+      this.mainCardClass = ''
+      if (nextAcross) {
+        this.nextCourse = nextAcross.course
+        if (nextAcross.daysLater === 0) {
+          this.nextCourseLabel = '明天第一节'
+        } else {
+          const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+          const date = new Date(now)
+          date.setDate(date.getDate() + nextAcross.daysLater)
+          this.nextCourseLabel = `下一节课 · ${days[date.getDay()]}`
+        }
+      } else {
+        this.nextCourse = { name: '暂无安排', startTime: '', classroom: '' }
+        this.nextCourseLabel = '近期无课'
+      }
+    } else {
+      // 今日无课
+      this.status = 'noClass'
+      this.mainCardClass = ''
+    }
+  },
+
+  goToCourseDetail() {
+    const course = this.status === 'ongoing' ? this.currentCourse : this.nextCourse
+    if (course && course.id) {
+      router.push({
+        uri: '/pages/course-detail',
+        params: {
+          courseId: course.id
+        }
+      })
+    }
+  },
+
+  goToExam() {
+    router.push({
+      uri: '/pages/exam'
+    })
+  },
+
+  goToTask() {
+    router.push({
+      uri: '/pages/task'
+    })
+  },
+
+  goToSchedule() {
+    router.push({
+      uri: '/pages/schedule'
+    })
+  }
+}
+</script>

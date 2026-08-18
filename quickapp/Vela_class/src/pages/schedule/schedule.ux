@@ -1,0 +1,405 @@
+<template>
+  <div class="page" ontouchstart="onTouchStart" ontouchmove="onTouchMove" ontouchend="onTouchEnd">
+    <!-- 顶部标题 -->
+    <div class="header">
+      <text class="title">课表</text>
+    </div>
+
+    <!-- 模式切换 -->
+    <div class="mode-switch">
+      <div class="mode-btn {{ mode === 'today' ? 'mode-active' : '' }}" onclick="switchMode('today')">
+        <text class="mode-text {{ mode === 'today' ? 'mode-text-active' : '' }}">今天</text>
+      </div>
+      <div class="mode-btn {{ mode === 'week' ? 'mode-active' : '' }}" onclick="switchMode('week')">
+        <text class="mode-text {{ mode === 'week' ? 'mode-text-active' : '' }}">本周</text>
+      </div>
+    </div>
+
+    <!-- 今日模式 -->
+    <div if="{{ mode === 'today' }}" class="content">
+      <text class="sub-title">{{ todayTitle }}</text>
+      <div class="timeline">
+        <div for="{{ todayCourses }}" class="timeline-item">
+          <div class="timeline-time">
+            <text class="time-text {{ $item.status === 'finished' ? 'text-gray' : ($item.status === 'ongoing' ? 'text-green' : 'text-blue') }}">{{ $item.startTime }}</text>
+          </div>
+          <div class="timeline-dot {{ $item.status === 'finished' ? 'dot-gray' : ($item.status === 'ongoing' ? 'dot-green' : 'dot-blue') }}"></div>
+          <div class="timeline-line {{ $item.status === 'finished' ? 'line-gray' : '' }}"></div>
+          <div class="timeline-card {{ $item.status === 'ongoing' ? 'card-green' : '' }}" onclick="goToDetail($item.id)">
+            <text class="card-name {{ $item.status === 'finished' ? 'text-gray' : '' }}">{{ $item.name }}</text>
+            <text class="card-location {{ $item.status === 'finished' ? 'text-gray' : '' }}">{{ $item.classroom }} · {{ $item.teacher }}</text>
+            <text if="{{ $item.status === 'ongoing' }}" class="card-status text-green">正在进行 · 剩余{{ $item.remainingMin }}分钟</text>
+            <text if="{{ $item.status === 'finished' }}" class="card-status text-gray">已结束</text>
+          </div>
+        </div>
+      </div>
+      <div if="{{ todayCourses.length === 0 }}" class="empty">
+        <text class="empty-text">今日无课</text>
+      </div>
+    </div>
+
+    <!-- 本周模式 -->
+    <div if="{{ mode === 'week' }}" class="content">
+      <!-- 星期选择器 -->
+      <div class="day-selector">
+        <div for="{{ weekDays }}" class="day-btn {{ selectedDay === $item.value ? 'day-active' : '' }}" onclick="selectDay($item.value)">
+          <text class="day-text {{ selectedDay === $item.value ? 'day-text-active' : '' }}">{{ $item.label }}</text>
+          <text if="{{ $item.isToday }}" class="today-mark">今天</text>
+        </div>
+      </div>
+
+      <text class="sub-title">{{ weekDayTitle }} · {{ weekCourses.length }}节课</text>
+
+      <div class="week-list">
+        <div for="{{ weekCourses }}" class="week-item" onclick="goToDetail($item.id)">
+          <text class="week-time {{ $item.status === 'finished' ? 'text-gray' : 'text-blue' }}">{{ $item.startTime }}</text>
+          <text class="week-name {{ $item.status === 'finished' ? 'text-gray' : '' }}">{{ $item.name }}</text>
+          <text class="week-location {{ $item.status === 'finished' ? 'text-gray' : '' }}">{{ $item.classroom }}</text>
+        </div>
+      </div>
+
+      <div if="{{ weekCourses.length === 0 }}" class="empty">
+        <text class="empty-text">该日无课</text>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style>
+.page {
+  flex-direction: column;
+  align-items: center;
+  background-color: #000000;
+  width: 466px;
+  height: 466px;
+  padding-top: 45px;
+}
+
+.header {
+  margin-bottom: 15px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.mode-switch {
+  flex-direction: row;
+  background-color: #171717;
+  border-radius: 20px;
+  padding: 4px;
+  margin-bottom: 15px;
+}
+
+.mode-btn {
+  padding: 8px 25px;
+  border-radius: 18px;
+}
+
+.mode-active {
+  background-color: #4FA3FF;
+}
+
+.mode-text {
+  font-size: 16px;
+  color: #8F8F8F;
+}
+
+.mode-text-active {
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+.content {
+  width: 400px;
+  flex-direction: column;
+}
+
+.sub-title {
+  font-size: 16px;
+  color: #8F8F8F;
+  margin-bottom: 12px;
+  margin-left: 5px;
+}
+
+.timeline {
+  flex-direction: column;
+}
+
+.timeline-item {
+  flex-direction: row;
+  align-items: flex-start;
+  margin-bottom: 5px;
+}
+
+.timeline-time {
+  width: 50px;
+  margin-right: 10px;
+}
+
+.time-text {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.timeline-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+  margin-top: 4px;
+  margin-right: 10px;
+}
+
+.dot-blue {
+  background-color: #4FA3FF;
+}
+
+.dot-green {
+  background-color: #58D68D;
+}
+
+.dot-gray {
+  background-color: #666666;
+}
+
+.timeline-line {
+  width: 2px;
+  height: 50px;
+  background-color: #2B2B2B;
+  position: absolute;
+  left: 67px;
+  top: 18px;
+}
+
+.line-gray {
+  background-color: #333333;
+}
+
+.timeline-card {
+  flex: 1;
+  background-color: #171717;
+  border-radius: 20px;
+  padding: 12px 15px;
+  margin-bottom: 10px;
+}
+
+.card-green {
+  border: 1px solid rgba(88, 214, 141, 0.4);
+}
+
+.card-name {
+  font-size: 20px;
+  font-weight: 600;
+  color: #FFFFFF;
+  margin-bottom: 4px;
+}
+
+.card-location {
+  font-size: 14px;
+  color: #A0A0A0;
+  margin-bottom: 4px;
+}
+
+.card-status {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.day-selector {
+  flex-direction: row;
+  justify-content: space-between;
+  margin-bottom: 15px;
+  padding: 0 10px;
+}
+
+.day-btn {
+  flex-direction: column;
+  align-items: center;
+  width: 55px;
+  height: 50px;
+  border-radius: 20px;
+  justify-content: center;
+}
+
+.day-active {
+  background-color: #4FA3FF;
+}
+
+.day-text {
+  font-size: 16px;
+  color: #8F8F8F;
+  font-weight: 600;
+}
+
+.day-text-active {
+  color: #FFFFFF;
+}
+
+.today-mark {
+  font-size: 10px;
+  color: #4FA3FF;
+  margin-top: 2px;
+}
+
+.week-list {
+  flex-direction: column;
+}
+
+.week-item {
+  flex-direction: row;
+  align-items: center;
+  background-color: #171717;
+  border-radius: 18px;
+  padding: 12px 15px;
+  margin-bottom: 8px;
+}
+
+.week-time {
+  font-size: 16px;
+  font-weight: 600;
+  width: 50px;
+  margin-right: 15px;
+}
+
+.week-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #FFFFFF;
+  flex: 1;
+}
+
+.week-location {
+  font-size: 14px;
+  color: #8F8F8F;
+}
+
+.empty {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100px;
+}
+
+.empty-text {
+  font-size: 18px;
+  color: #666666;
+}
+
+.text-blue {
+  color: #4FA3FF;
+}
+
+.text-green {
+  color: #58D68D;
+}
+
+.text-gray {
+  color: #666666;
+}
+</style>
+
+<script>
+import router from '@system.router'
+import { getTodayCourses, getCoursesByWeekday, getCourseStatus, getCourseRemainingTime } from '../../common/schedule'
+import { getNow, getWeekdayNumber } from '../../common/time'
+import { createGestureState, handleTouchStart, handleTouchMove, handleTouchEnd } from '../../common/gesture'
+
+const DEBUG_NOW = null
+
+export default {
+  private: {
+    mode: 'today',
+    selectedDay: 1,
+    todayTitle: '',
+    weekDayTitle: '',
+    todayCourses: [],
+    weekCourses: [],
+    weekDays: [
+      { label: '一', value: 1, isToday: false },
+      { label: '二', value: 2, isToday: false },
+      { label: '三', value: 3, isToday: false },
+      { label: '四', value: 4, isToday: false },
+      { label: '五', value: 5, isToday: false },
+      { label: '六', value: 6, isToday: false },
+      { label: '日', value: 7, isToday: false }
+    ],
+    gesture: createGestureState()
+  },
+
+  onInit() {
+    const now = getNow(DEBUG_NOW)
+    this.selectedDay = getWeekdayNumber(now)
+
+    // 标记今天
+    this.weekDays.forEach(d => {
+      d.isToday = d.value === this.selectedDay
+    })
+
+    this.loadTodayCourses(now)
+    this.loadWeekCourses(now)
+  },
+
+  loadTodayCourses(now) {
+    const courses = getTodayCourses(now)
+    const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+    this.todayTitle = `${days[now.getDay()]} · 共${courses.length}节`
+
+    this.todayCourses = courses.map(c => ({
+      ...c,
+      status: getCourseStatus(c, now),
+      remainingMin: getCourseRemainingTime(c, now)
+    }))
+  },
+
+  loadWeekCourses(now) {
+    const courses = getCoursesByWeekday(this.selectedDay)
+    const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+    const dayIndex = this.selectedDay === 7 ? 0 : this.selectedDay
+    this.weekDayTitle = `${days[dayIndex]}`
+
+    this.weekCourses = courses.map(c => ({
+      ...c,
+      status: getCourseStatus(c, now)
+    }))
+  },
+
+  switchMode(mode) {
+    this.mode = mode
+  },
+
+  selectDay(day) {
+    this.selectedDay = day
+    const now = getNow(DEBUG_NOW)
+    this.loadWeekCourses(now)
+  },
+
+  goToDetail(courseId) {
+    router.push({
+      uri: '/pages/course-detail',
+      params: {
+        courseId: courseId
+      }
+    })
+  },
+
+  onTouchStart(e) {
+    handleTouchStart(this.gesture, e)
+  },
+
+  onTouchMove(e) {
+    handleTouchMove(this.gesture, e)
+  },
+
+  onTouchEnd(e) {
+    if (handleTouchEnd(this.gesture, e)) {
+      router.back()
+    }
+  },
+
+  goBack() {
+    router.back()
+  }
+}
+</script>

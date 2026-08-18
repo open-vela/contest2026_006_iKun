@@ -1,0 +1,264 @@
+<template>
+  <div class="page" ontouchstart="onTouchStart" ontouchmove="onTouchMove" ontouchend="onTouchEnd">
+    <!-- 顶部标题 -->
+    <div class="header">
+      <text class="title">考试</text>
+    </div>
+
+    <!-- 最近考试大卡片 -->
+    <div if="{{ nearestExam }}" class="main-card">
+      <div class="countdown-circle">
+        <text class="countdown-value">{{ countdown.value }}</text>
+        <text class="countdown-unit">{{ countdown.unit }}</text>
+      </div>
+      <text class="exam-course">{{ nearestExam.course }}</text>
+      <text class="exam-date">{{ examDate }}</text>
+      <text class="exam-location">{{ nearestExam.classroom }}</text>
+    </div>
+
+    <div if="{{ !nearestExam }}" class="main-card">
+      <text class="no-exam">暂无考试安排</text>
+    </div>
+
+    <!-- 后续考试列表 -->
+    <div if="{{ upcomingExams.length > 1 }}" class="list-section">
+      <text class="list-title">后续考试</text>
+      <div class="exam-list">
+        <div for="{{ upcomingExams }}" class="exam-item" if="{{ $idx > 0 }}">
+          <div class="exam-info">
+            <text class="exam-name">{{ $item.course }}</text>
+            <text class="exam-time">{{ $item.dateText }} · {{ $item.startTime }}</text>
+            <text class="exam-place">{{ $item.classroom }}</text>
+          </div>
+          <div class="exam-countdown-badge">
+            <text class="badge-value">{{ $item.countdown.value }}</text>
+            <text class="badge-unit">{{ $item.countdown.unit }}</text>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div if="{{ upcomingExams.length <= 1 }}" class="empty">
+      <text class="empty-text">没有更多考试</text>
+    </div>
+  </div>
+</template>
+
+<style>
+.page {
+  flex-direction: column;
+  align-items: center;
+  background-color: #000000;
+  width: 466px;
+  height: 466px;
+  padding-top: 45px;
+}
+
+.header {
+  margin-bottom: 20px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.main-card {
+  width: 380px;
+  height: 185px;
+  border-radius: 28px;
+  background-color: #171717;
+  border: 1px solid rgba(255, 107, 107, 0.4);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.countdown-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 40px;
+  background-color: rgba(255, 107, 107, 0.2);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.countdown-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #FF6B6B;
+}
+
+.countdown-unit {
+  font-size: 14px;
+  color: #FF6B6B;
+}
+
+.exam-course {
+  font-size: 28px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-bottom: 6px;
+}
+
+.exam-date {
+  font-size: 18px;
+  color: #CFCFCF;
+  margin-bottom: 4px;
+}
+
+.exam-location {
+  font-size: 16px;
+  color: #A0A0A0;
+}
+
+.no-exam {
+  font-size: 20px;
+  color: #8F8F8F;
+}
+
+.list-section {
+  width: 380px;
+  flex-direction: column;
+}
+
+.list-title {
+  font-size: 16px;
+  color: #8F8F8F;
+  margin-bottom: 10px;
+  margin-left: 5px;
+}
+
+.exam-list {
+  flex-direction: column;
+}
+
+.exam-item {
+  flex-direction: row;
+  align-items: center;
+  background-color: #171717;
+  border-radius: 20px;
+  padding: 15px;
+  margin-bottom: 8px;
+}
+
+.exam-info {
+  flex: 1;
+  flex-direction: column;
+}
+
+.exam-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #FFFFFF;
+  margin-bottom: 4px;
+}
+
+.exam-time {
+  font-size: 14px;
+  color: #CFCFCF;
+  margin-bottom: 2px;
+}
+
+.exam-place {
+  font-size: 14px;
+  color: #8F8F8F;
+}
+
+.exam-countdown-badge {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 55px;
+  height: 55px;
+  border-radius: 18px;
+  background-color: rgba(255, 107, 107, 0.15);
+}
+
+.badge-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #FF6B6B;
+}
+
+.badge-unit {
+  font-size: 12px;
+  color: #FF6B6B;
+}
+
+.empty {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 80px;
+}
+
+.empty-text {
+  font-size: 16px;
+  color: #666666;
+}
+</style>
+
+<script>
+import router from '@system.router'
+import { getNearestExam, getUpcomingExams, getExamCountdown, formatExamDate } from '../../common/exam'
+import { getNow } from '../../common/time'
+import { createGestureState, handleTouchStart, handleTouchMove, handleTouchEnd } from '../../common/gesture'
+
+const DEBUG_NOW = null
+
+export default {
+  private: {
+    nearestExam: null,
+    countdown: { value: 0, unit: '' },
+    examDate: '',
+    upcomingExams: [],
+    gesture: createGestureState()
+  },
+
+  onInit() {
+    this.loadExams()
+  },
+
+  loadExams() {
+    const now = getNow(DEBUG_NOW)
+
+    // 最近考试
+    this.nearestExam = getNearestExam(now)
+    if (this.nearestExam) {
+      this.countdown = getExamCountdown(this.nearestExam, now)
+      this.examDate = formatExamDate(this.nearestExam)
+    }
+
+    // 所有即将到来的考试
+    const exams = getUpcomingExams(now)
+    this.upcomingExams = exams.map(e => ({
+      ...e,
+      dateText: formatExamDate(e).split(' · ')[0],
+      countdown: getExamCountdown(e, now)
+    }))
+  },
+
+  onTouchStart(e) {
+    handleTouchStart(this.gesture, e)
+  },
+
+  onTouchMove(e) {
+    handleTouchMove(this.gesture, e)
+  },
+
+  onTouchEnd(e) {
+    if (handleTouchEnd(this.gesture, e)) {
+      router.back()
+    }
+  },
+
+  goBack() {
+    router.back()
+  }
+}
+</script>

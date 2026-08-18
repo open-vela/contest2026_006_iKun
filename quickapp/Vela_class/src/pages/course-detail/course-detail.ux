@@ -1,0 +1,246 @@
+<template>
+  <div class="page" ontouchstart="onTouchStart" ontouchmove="onTouchMove" ontouchend="onTouchEnd">
+    <div if="{{ course }}" class="content">
+      <!-- 课程名称 -->
+      <text class="course-name">{{ course.name }}</text>
+
+      <!-- 时间信息 -->
+      <div class="time-section">
+        <text class="time-value">{{ course.startTime }}</text>
+        <text class="time-arrow">↓</text>
+        <text class="time-value">{{ course.endTime }}</text>
+      </div>
+
+      <!-- 地点信息 -->
+      <div class="info-row">
+        <text class="info-label">教室</text>
+        <text class="info-value">{{ course.classroom }}</text>
+      </div>
+
+      <!-- 教师信息 -->
+      <div class="info-row">
+        <text class="info-label">教师</text>
+        <text class="info-value">{{ course.teacher }}</text>
+      </div>
+
+      <!-- 状态信息 -->
+      <div if="{{ status === 'ongoing' }}" class="status-section">
+        <text class="status-text text-green">当前剩余 {{ remainingMinutes }} 分钟</text>
+        <div class="progress-container">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ progress }}%"></div>
+          </div>
+          <text class="progress-text">{{ progressPercent }}%</text>
+        </div>
+      </div>
+
+      <div if="{{ status === 'upcoming' }}" class="status-section">
+        <text class="status-text text-blue">还有 {{ minutesUntilStart }} 分钟开始</text>
+      </div>
+
+      <div if="{{ status === 'finished' }}" class="status-section">
+        <text class="status-text text-gray">已结束</text>
+      </div>
+    </div>
+
+    <div if="{{ !course }}" class="empty">
+      <text class="empty-text">课程不存在</text>
+    </div>
+  </div>
+</template>
+
+<style>
+.page {
+  flex-direction: column;
+  align-items: center;
+  background-color: #000000;
+  width: 466px;
+  height: 466px;
+  padding-top: 45px;
+}
+
+.content {
+  width: 380px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.course-name {
+  font-size: 34px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-bottom: 25px;
+}
+
+.time-section {
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.time-value {
+  font-size: 48px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.time-arrow {
+  font-size: 32px;
+  color: #4FA3FF;
+  margin: 0 20px;
+}
+
+.info-row {
+  flex-direction: row;
+  width: 380px;
+  margin-bottom: 15px;
+  padding: 15px 20px;
+  background-color: #171717;
+  border-radius: 20px;
+}
+
+.info-label {
+  font-size: 16px;
+  color: #8F8F8F;
+  width: 60px;
+}
+
+.info-value {
+  font-size: 20px;
+  color: #FFFFFF;
+  flex: 1;
+}
+
+.status-section {
+  width: 380px;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 25px;
+  padding: 20px;
+  background-color: #171717;
+  border-radius: 22px;
+}
+
+.status-text {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 15px;
+}
+
+.progress-container {
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 10px;
+  border-radius: 5px;
+  background-color: #2B2B2B;
+}
+
+.progress-fill {
+  height: 10px;
+  border-radius: 5px;
+  background-color: #58D68D;
+}
+
+.progress-text {
+  font-size: 20px;
+  font-weight: 700;
+  color: #58D68D;
+  margin-left: 15px;
+}
+
+.text-blue {
+  color: #4FA3FF;
+}
+
+.text-green {
+  color: #58D68D;
+}
+
+.text-gray {
+  color: #666666;
+}
+
+.empty {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+}
+
+.empty-text {
+  font-size: 20px;
+  color: #666666;
+}
+</style>
+
+<script>
+import router from '@system.router'
+import { courses } from '../../common/data'
+import { getCourseStatus, getCourseProgress, getCourseRemainingTime, getMinutesUntilStart } from '../../common/schedule'
+import { getNow } from '../../common/time'
+import { createGestureState, handleTouchStart, handleTouchMove, handleTouchEnd } from '../../common/gesture'
+
+const DEBUG_NOW = null
+
+export default {
+  protected: {
+    courseId: ''
+  },
+
+  private: {
+    course: null,
+    status: 'upcoming',
+    progress: 0,
+    progressPercent: 0,
+    remainingMinutes: 0,
+    minutesUntilStart: 0,
+    gesture: createGestureState()
+  },
+
+  onInit() {
+    this.loadCourse()
+  },
+
+  loadCourse() {
+    const now = getNow(DEBUG_NOW)
+
+    // 查找课程
+    this.course = courses.find(c => c.id === this.courseId)
+
+    if (this.course) {
+      this.status = getCourseStatus(this.course, now)
+
+      if (this.status === 'ongoing') {
+        this.progress = Math.round(getCourseProgress(this.course, now) * 100)
+        this.progressPercent = this.progress
+        this.remainingMinutes = getCourseRemainingTime(this.course, now)
+      } else if (this.status === 'upcoming') {
+        this.minutesUntilStart = getMinutesUntilStart(this.course, now)
+      }
+    }
+  },
+
+  onTouchStart(e) {
+    handleTouchStart(this.gesture, e)
+  },
+
+  onTouchMove(e) {
+    handleTouchMove(this.gesture, e)
+  },
+
+  onTouchEnd(e) {
+    if (handleTouchEnd(this.gesture, e)) {
+      router.back()
+    }
+  },
+
+  goBack() {
+    router.back()
+  }
+}
+</script>
