@@ -5,76 +5,100 @@
       <text class="title">待办</text>
     </div>
 
-    <!-- 今日待办 -->
-    <div if="{{ todayTasks.length > 0 }}" class="section">
-      <text class="section-title">今天 · {{ todayTasks.length }}</text>
-      <div class="task-list">
-        <div for="{{ todayTasks }}" class="task-item {{ $item.finished ? 'task-finished' : '' }}">
-          <div class="task-check {{ $item.finished ? 'check-done' : '' }}" onclick="toggleTask($item.id)">
-            <text class="check-icon">{{ $item.finished ? '●' : '○' }}</text>
-          </div>
-          <div class="task-info" onclick="goToDetail($item.id)">
-            <text class="task-name {{ $item.finished ? 'text-gray' : '' }}">{{ $item.title }}</text>
-            <text class="task-deadline {{ $item.countdown.isUrgent ? 'text-orange' : ($item.countdown.isCritical ? 'text-red' : 'text-gray') }}">
-              {{ $item.deadlineText }} · {{ $item.countdownText }}
-            </text>
+    <!-- 可滚动区域 -->
+    <scroll class="task-scroll" scroll-y="true" bounces="true">
+
+      <!-- 已逾期待办 -->
+      <div if="{{ overdueTasks.length > 0 }}" class="section">
+        <text class="section-title">已逾期 · {{ overdueTasks.length }}</text>
+        <div class="task-list">
+          <div for="{{ overdueTasks }}" class="task-item">
+            <div class="task-check" onclick="toggleTask($item.id)">
+              <text class="check-icon">○</text>
+            </div>
+            <div class="task-info" onclick="goToDetail($item.id)">
+              <text class="task-name">{{ $item.title }}</text>
+              <text class="task-deadline text-red">{{ $item.deadlineText }} · 已截止</text>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- 本周待办 -->
-    <div if="{{ weekTasks.length > 0 }}" class="section">
-      <text class="section-title">本周 · {{ weekTasks.length }}</text>
-      <div class="task-list">
-        <div for="{{ weekTasks }}" class="task-item">
-          <div class="task-check" onclick="toggleTask($item.id)">
-            <text class="check-icon">○</text>
-          </div>
-          <div class="task-info" onclick="goToDetail($item.id)">
-            <text class="task-name">{{ $item.title }}</text>
-            <text class="task-deadline text-gray">{{ $item.deadlineText }}</text>
+      <!-- 今日待办 -->
+      <div if="{{ todayTasks.length > 0 }}" class="section">
+        <text class="section-title">今天 · {{ todayTasks.length }}</text>
+        <div class="task-list">
+          <div for="{{ todayTasks }}" class="task-item">
+            <div class="task-check" onclick="toggleTask($item.id)">
+              <text class="check-icon">○</text>
+            </div>
+            <div class="task-info" onclick="goToDetail($item.id)">
+              <text class="task-name">{{ $item.title }}</text>
+              <text class="task-deadline {{ $item.countdown.isUrgent ? 'text-orange' : ($item.countdown.isCritical ? 'text-red' : 'text-gray') }}">
+                {{ $item.deadlineText }} · {{ $item.countdownText }}
+              </text>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- 以后待办 -->
-    <div if="{{ futureTasks.length > 0 }}" class="section">
-      <text class="section-title">以后 · {{ futureTasks.length }}</text>
-      <div class="task-list">
-        <div for="{{ futureTasks }}" class="task-item">
-          <div class="task-check" onclick="toggleTask($item.id)">
-            <text class="check-icon">○</text>
-          </div>
-          <div class="task-info" onclick="goToDetail($item.id)">
-            <text class="task-name">{{ $item.title }}</text>
-            <text class="task-deadline text-gray">{{ $item.deadlineText }}</text>
+      <!-- 本周待办 -->
+      <div if="{{ weekTasks.length > 0 }}" class="section">
+        <text class="section-title">本周 · {{ weekTasks.length }}</text>
+        <div class="task-list">
+          <div for="{{ weekTasks }}" class="task-item">
+            <div class="task-check" onclick="toggleTask($item.id)">
+              <text class="check-icon">○</text>
+            </div>
+            <div class="task-info" onclick="goToDetail($item.id)">
+              <text class="task-name">{{ $item.title }}</text>
+              <text class="task-deadline text-gray">{{ $item.deadlineText }}</text>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- 已完成 -->
-    <div if="{{ finishedTasks.length > 0 }}" class="section">
-      <text class="section-title">已完成</text>
-      <div class="task-list">
-        <div for="{{ finishedTasks }}" class="task-item task-finished">
-          <div class="task-check check-done">
-            <text class="check-icon">●</text>
-          </div>
-          <div class="task-info">
-            <text class="task-name text-gray">{{ $item.title }}</text>
-            <text class="task-deadline text-gray">{{ $item.deadlineText }}</text>
+      <!-- 以后待办 -->
+      <div if="{{ futureTasks.length > 0 }}" class="section">
+        <text class="section-title">以后 · {{ futureTasks.length }}</text>
+        <div class="task-list">
+          <div for="{{ futureTasks }}" class="task-item">
+            <div class="task-check" onclick="toggleTask($item.id)">
+              <text class="check-icon">○</text>
+            </div>
+            <div class="task-info" onclick="goToDetail($item.id)">
+              <text class="task-name">{{ $item.title }}</text>
+              <text class="task-deadline text-gray">{{ $item.deadlineText }}</text>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- 空状态 -->
-    <div if="{{ todayTasks.length === 0 && weekTasks.length === 0 && futureTasks.length === 0 }}" class="empty">
-      <text class="empty-text">今天没有待办</text>
-    </div>
+      <!-- 已完成 -->
+      <div if="{{ finishedTasks.length > 0 }}" class="section">
+        <text class="section-title">已完成 · {{ finishedTasks.length }}</text>
+        <div class="task-list">
+          <div for="{{ finishedTasks }}" class="task-item task-finished-item">
+            <div class="task-check check-done" onclick="toggleTask($item.id)">
+              <text class="check-icon">●</text>
+            </div>
+            <div class="task-info" onclick="goToDetail($item.id)">
+              <text class="task-name text-gray">{{ $item.title }}</text>
+              <text class="task-deadline text-dark-gray">{{ $item.deadlineText }}</text>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 空状态 -->
+      <div if="{{ overdueTasks.length === 0 && todayTasks.length === 0 && weekTasks.length === 0 && futureTasks.length === 0 && finishedTasks.length === 0 }}" class="empty">
+        <text class="empty-text">暂无待办</text>
+      </div>
+
+      <!-- 底部圆屏安全空间 -->
+      <div class="bottom-safe-space"></div>
+
+    </scroll>
   </div>
 </template>
 
@@ -98,9 +122,17 @@
   color: #FFFFFF;
 }
 
+.task-scroll {
+  width: 400px;
+  height: 375px;
+  flex-direction: column;
+  align-items: center;
+}
+
 .section {
   width: 380px;
   flex-direction: column;
+  flex-shrink: 0;
   margin-bottom: 15px;
 }
 
@@ -109,23 +141,27 @@
   color: #8F8F8F;
   margin-bottom: 10px;
   margin-left: 5px;
+  flex-shrink: 0;
 }
 
 .task-list {
   flex-direction: column;
+  flex-shrink: 0;
 }
 
 .task-item {
   flex-direction: row;
   align-items: center;
+  flex-shrink: 0;
   background-color: #171717;
   border-radius: 20px;
   padding: 12px 15px;
   margin-bottom: 8px;
+  min-height: 64px;
 }
 
-.task-finished {
-  opacity: 0.6;
+.task-finished-item {
+  opacity: 1;
 }
 
 .task-check {
@@ -137,6 +173,7 @@
   align-items: center;
   justify-content: center;
   margin-right: 12px;
+  flex-shrink: 0;
 }
 
 .check-done {
@@ -168,6 +205,10 @@
   color: #666666;
 }
 
+.text-dark-gray {
+  color: #555555;
+}
+
 .text-orange {
   color: #FFA940;
 }
@@ -181,17 +222,25 @@
   align-items: center;
   justify-content: center;
   height: 100px;
+  flex-shrink: 0;
 }
 
 .empty-text {
   font-size: 18px;
   color: #666666;
 }
+
+.bottom-safe-space {
+  width: 380px;
+  height: 90px;
+  flex-shrink: 0;
+}
 </style>
 
 <script>
 import router from '@system.router'
-import { getTodayTasks, getWeekTasks, getFutureTasks, getFinishedTasks, getTaskCountdown, formatTaskCountdown, toggleTaskStatus } from '../../common/task'
+import { getOverdueTasks, getTodayTasks, getWeekTasks, getFutureTasks, getFinishedTasks, getTaskCountdown, formatTaskCountdown, toggleTaskStatus } from '../../common/task'
+import { getTasks, ensureStorageReady, refreshTasksFromStorage } from '../../common/storage'
 import { getNow, parseDateTime } from '../../common/time'
 import { createGestureState, handleTouchStart, handleTouchMove, handleTouchEnd } from '../../common/gesture'
 
@@ -199,19 +248,49 @@ const DEBUG_NOW = null
 
 export default {
   private: {
+    overdueTasks: [],
     todayTasks: [],
     weekTasks: [],
     futureTasks: [],
     finishedTasks: [],
+    isUpdating: false,
     gesture: createGestureState()
   },
 
   onInit() {
-    this.loadTasks()
+    ensureStorageReady()
+      .then(() => refreshTasksFromStorage())
+      .then(() => {
+        this.loadTasks()
+      })
+      .catch((err) => {
+        console.error('Failed to initialize storage:', err)
+        this.loadTasks()
+      })
+  },
+
+  onShow() {
+    ensureStorageReady()
+      .then(() => refreshTasksFromStorage())
+      .then(() => {
+        this.loadTasks()
+      })
+      .catch((err) => {
+        console.error('Failed to refresh task page:', err)
+        this.loadTasks()
+      })
   },
 
   loadTasks() {
     const now = getNow(DEBUG_NOW)
+
+    // 已逾期待办
+    this.overdueTasks = getOverdueTasks(now).map(t => ({
+      ...t,
+      deadlineText: this.formatDeadline(t.deadline),
+      countdown: getTaskCountdown(t, now),
+      countdownText: formatTaskCountdown(t, now)
+    }))
 
     // 今日待办
     this.todayTasks = getTodayTasks(now).map(t => ({
@@ -270,8 +349,24 @@ export default {
   },
 
   toggleTask(taskId) {
-    toggleTaskStatus(taskId)
-    this.loadTasks()
+    // 防止重复点击
+    if (this.isUpdating) return
+
+    const tasks = getTasks()
+    const task = tasks.find(t => t.id === taskId)
+    if (task) {
+      this.isUpdating = true
+      toggleTaskStatus(taskId, !task.finished)
+        .then(() => refreshTasksFromStorage())
+        .then(() => {
+          this.loadTasks()
+          this.isUpdating = false
+        })
+        .catch((err) => {
+          console.error('Failed to toggle task:', err)
+          this.isUpdating = false
+        })
+    }
   },
 
   goToDetail(taskId) {

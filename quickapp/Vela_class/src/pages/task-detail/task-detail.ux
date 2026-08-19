@@ -183,7 +183,7 @@
 
 <script>
 import router from '@system.router'
-import { getTasks, updateTaskStatus } from '../../common/storage'
+import { getTasks, updateTaskStatus, ensureStorageReady, refreshTasksFromStorage } from '../../common/storage'
 import { getTaskCountdown, formatTaskCountdown, getTaskTypeText } from '../../common/task'
 import { getNow, parseDateTime } from '../../common/time'
 import { createGestureState, handleTouchStart, handleTouchMove, handleTouchEnd } from '../../common/gesture'
@@ -201,19 +201,29 @@ export default {
     deadlineText: '',
     countdown: { value: 0, unit: '', isUrgent: false, isCritical: false },
     countdownText: '',
+    isUpdating: false,
     gesture: createGestureState()
   },
 
   onInit() {
-    this.loadTask()
+    ensureStorageReady()
+      .then(() => refreshTasksFromStorage())
+      .then(() => {
+        this.loadTask()
+      })
+      .catch((err) => {
+        console.error('Failed to initialize storage:', err)
+        this.loadTask()
+      })
   },
 
   loadTask() {
     const now = getNow(DEBUG_NOW)
     const tasks = getTasks()
 
-    // 查找任务
-    this.task = tasks.find(t => t.id === this.taskId)
+    // 查找任务并复制为新对象
+    const found = tasks.find(t => t.id === this.taskId)
+    this.task = found ? { ...found } : null
 
     if (this.task) {
       this.taskType = getTaskTypeText(this.task.type)
@@ -234,9 +244,19 @@ export default {
   },
 
   toggleStatus() {
-    if (this.task) {
-      updateTaskStatus(this.taskId, !this.task.finished)
-      this.loadTask()
+    if (this.task && !this.isUpdating) {
+      this.isUpdating = true
+      const newStatus = !this.task.finished
+      updateTaskStatus(this.taskId, newStatus)
+        .then(() => refreshTasksFromStorage())
+        .then(() => {
+          this.loadTask()
+          this.isUpdating = false
+        })
+        .catch((err) => {
+          console.error('Failed to toggle status:', err)
+          this.isUpdating = false
+        })
     }
   },
 

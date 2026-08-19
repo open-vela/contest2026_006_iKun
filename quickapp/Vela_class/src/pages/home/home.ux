@@ -67,7 +67,7 @@
       <!-- 待办摘要 -->
       <div class="summary-card task-card" onclick="goToTask">
         <text class="summary-icon status-purple">待办</text>
-        <text class="summary-count status-purple">{{ taskSummary.todayCount }} 项</text>
+        <text class="summary-count status-purple">{{ taskSummary.totalCount }} 项</text>
       </div>
     </div>
   </div>
@@ -284,6 +284,7 @@ import { getCurrentCourse, getNextCourse, getNextCourseAcrossDays, getCourseProg
 import { getNearestExam, getExamCountdown, getExamSummary } from '../../common/exam'
 import { getTaskSummary } from '../../common/task'
 import { getNow, formatTime, formatFullDate } from '../../common/time'
+import { ensureStorageReady, refreshTasksFromStorage } from '../../common/storage'
 
 // 调试模式：设置为 null 使用真实时间，设置为 Date 对象使用模拟时间
 const DEBUG_NOW = null
@@ -310,18 +311,61 @@ export default {
     nearestExam: null,
     examCountdown: { value: 0, unit: '' },
     examSummary: { count: 0, nearestCourse: null },
-    taskSummary: { todayCount: 0, urgentCount: 0 },
-    todayCourseCount: 0
+    taskSummary: { todayCount: 0, totalCount: 0, urgentCount: 0 },
+    todayCourseCount: 0,
+    timer: null
   },
 
   onInit() {
     this.updateTime()
-    this.updateStatus()
-    // 每秒更新时间
-    setInterval(() => {
-      this.updateTime()
-      this.updateStatus()
-    }, 1000)
+
+    ensureStorageReady()
+      .then(() => refreshTasksFromStorage())
+      .then(() => {
+        this.updateStatus()
+
+        if (!this.timer) {
+          this.timer = setInterval(() => {
+            this.updateTime()
+            this.updateStatus()
+          }, 1000)
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to initialize storage on home:', err)
+
+        this.updateStatus()
+
+        if (!this.timer) {
+          this.timer = setInterval(() => {
+            this.updateTime()
+            this.updateStatus()
+          }, 1000)
+        }
+      })
+  },
+
+  onShow() {
+    ensureStorageReady()
+      .then(() => refreshTasksFromStorage())
+      .then(() => {
+        this.updateTime()
+        this.updateStatus()
+      })
+      .catch((err) => {
+        console.error('Failed to refresh home:', err)
+
+        // 即使重新读取 Storage 失败，也使用当前缓存刷新一次界面
+        this.updateTime()
+        this.updateStatus()
+      })
+  },
+
+  onDestroy() {
+    if (this.timer) {
+      clearInterval(this.timer)
+      this.timer = null
+    }
   },
 
   updateTime() {

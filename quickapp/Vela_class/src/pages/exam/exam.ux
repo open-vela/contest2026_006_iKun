@@ -208,6 +208,7 @@ import router from '@system.router'
 import { getNearestExam, getUpcomingExams, getExamCountdown, formatExamDate } from '../../common/exam'
 import { getNow } from '../../common/time'
 import { createGestureState, handleTouchStart, handleTouchMove, handleTouchEnd } from '../../common/gesture'
+import { ensureStorageReady } from '../../common/storage'
 
 const DEBUG_NOW = null
 
@@ -221,10 +222,28 @@ export default {
   },
 
   onInit() {
-    this.loadExams()
+    ensureStorageReady().then(() => {
+      this.loadExams()
+    }).catch((err) => {
+      console.error('Failed to initialize storage on exam:', err)
+    })
+  },
+
+  onShow() {
+    ensureStorageReady().then(() => {
+      this.loadExams()
+    }).catch((err) => {
+      console.error('Failed to refresh exams:', err)
+    })
   },
 
   loadExams() {
+    // 重置页面数据，避免旧状态残留
+    this.nearestExam = null
+    this.countdown = { value: 0, unit: '' }
+    this.examDate = ''
+    this.upcomingExams = []
+
     const now = getNow(DEBUG_NOW)
 
     // 最近考试

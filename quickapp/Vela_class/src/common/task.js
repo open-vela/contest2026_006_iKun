@@ -7,7 +7,21 @@ import { getTasks, updateTaskStatus } from './storage'
 import { parseDateTime, diffMinutes, getNow, isToday } from './time'
 
 /**
- * 获取今日待办
+ * 获取已逾期待办（截止时间早于当前时间且未完成）
+ * @param {Date} now
+ * @returns {Array}
+ */
+export function getOverdueTasks(now) {
+  const tasks = getTasks()
+  return tasks.filter(t => {
+    if (t.finished) return false
+    const deadline = parseDateTime(t.deadline)
+    return deadline < now
+  }).sort((a, b) => parseDateTime(a.deadline) - parseDateTime(b.deadline))
+}
+
+/**
+ * 获取今日待办（今天截止且未过期、未完成）
  * @param {Date} now
  * @returns {Array}
  */
@@ -16,12 +30,13 @@ export function getTodayTasks(now) {
   return tasks.filter(t => {
     if (t.finished) return false
     const deadline = parseDateTime(t.deadline)
-    return isToday(deadline, now)
+    // 今天截止且尚未过期
+    return isToday(deadline, now) && deadline >= now
   }).sort((a, b) => parseDateTime(a.deadline) - parseDateTime(b.deadline))
 }
 
 /**
- * 获取本周待办
+ * 获取本周待办（本周内、非今天、未过期、未完成）
  * @param {Date} now
  * @returns {Array}
  */
@@ -39,7 +54,7 @@ export function getWeekTasks(now) {
 }
 
 /**
- * 获取未来待办
+ * 获取未来待办（本周之后、未完成）
  * @param {Date} now
  * @returns {Array}
  */
@@ -111,7 +126,7 @@ export function formatTaskCountdown(task, now) {
 /**
  * 获取待办摘要
  * @param {Date} now
- * @returns {object} { todayCount, urgentCount }
+ * @returns {object} { todayCount, totalCount, urgentCount }
  */
 export function getTaskSummary(now) {
   const todayTasks = getTodayTasks(now)
@@ -123,6 +138,7 @@ export function getTaskSummary(now) {
 
   return {
     todayCount: todayTasks.length,
+    totalCount: allTasks.length,
     urgentCount
   }
 }
@@ -130,17 +146,11 @@ export function getTaskSummary(now) {
 /**
  * 切换任务完成状态
  * @param {string} taskId
- * @returns {boolean} 新状态
+ * @param {boolean} newStatus
+ * @returns {Promise<boolean>}
  */
-export function toggleTaskStatus(taskId) {
-  const tasks = getTasks()
-  const task = tasks.find(t => t.id === taskId)
-  if (task) {
-    const newStatus = !task.finished
-    updateTaskStatus(taskId, newStatus)
-    return newStatus
-  }
-  return false
+export function toggleTaskStatus(taskId, newStatus) {
+  return updateTaskStatus(taskId, newStatus)
 }
 
 /**
