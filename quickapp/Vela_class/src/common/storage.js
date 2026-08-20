@@ -219,7 +219,8 @@ export function refreshTasksFromStorage() {
       key: STORAGE_KEYS.TASKS,
       success: function (data) {
         try {
-          const parsed = data ? JSON.parse(data) : []
+          // 没有持久化数据时使用默认 mock 数据
+          const parsed = data ? JSON.parse(data) : [...tasks]
           // 生成新的数组和对象，避免引用旧对象
           taskCache = parsed.map(task => ({ ...task }))
           resolve(taskCache)
@@ -233,6 +234,66 @@ export function refreshTasksFromStorage() {
         console.error('Failed to refresh tasks from storage:', code)
         // 读取失败时保留当前缓存
         resolve(taskCache)
+      }
+    })
+  })
+}
+
+/**
+ * 从 Storage 重新读取考试数据
+ * @returns {Promise<Array>}
+ */
+export function refreshExamsFromStorage() {
+  return new Promise((resolve, reject) => {
+    storage.get({
+      key: STORAGE_KEYS.EXAMS,
+      success: function (data) {
+        try {
+          // 没有持久化数据时使用默认 mock 数据
+          const parsed = data ? JSON.parse(data) : [...exams]
+          // 生成新的数组和对象，避免引用旧对象
+          examCache = parsed.map(exam => ({ ...exam }))
+          resolve(examCache)
+        } catch (e) {
+          console.error('Failed to parse exams on refresh:', e)
+          // 读取失败时保留当前缓存
+          resolve(examCache)
+        }
+      },
+      fail: function (data, code) {
+        console.error('Failed to refresh exams from storage:', code)
+        // 读取失败时保留当前缓存
+        resolve(examCache)
+      }
+    })
+  })
+}
+
+/**
+ * 从 Storage 重新读取课程数据
+ * @returns {Promise<Array>}
+ */
+export function refreshCoursesFromStorage() {
+  return new Promise((resolve, reject) => {
+    storage.get({
+      key: STORAGE_KEYS.COURSES,
+      success: function (data) {
+        try {
+          // 没有持久化数据时使用默认 mock 数据
+          const parsed = data ? JSON.parse(data) : [...courses]
+          // 生成新的数组和对象，避免引用旧对象
+          courseCache = parsed.map(course => ({ ...course }))
+          resolve(courseCache)
+        } catch (e) {
+          console.error('Failed to parse courses on refresh:', e)
+          // 读取失败时保留当前缓存
+          resolve(courseCache)
+        }
+      },
+      fail: function (data, code) {
+        console.error('Failed to refresh courses from storage:', code)
+        // 读取失败时保留当前缓存
+        resolve(courseCache)
       }
     })
   })

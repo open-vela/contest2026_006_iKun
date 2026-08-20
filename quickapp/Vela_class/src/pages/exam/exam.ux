@@ -5,27 +5,13 @@
       <text class="title">考试</text>
     </div>
 
-    <!-- 最近考试大卡片 -->
-    <div if="{{ nearestExam }}" class="main-card">
-      <div class="countdown-circle">
-        <text class="countdown-value">{{ countdown.value }}</text>
-        <text class="countdown-unit">{{ countdown.unit }}</text>
-      </div>
-      <text class="exam-course">{{ nearestExam.course }}</text>
-      <text class="exam-date">{{ examDate }}</text>
-      <text class="exam-location">{{ nearestExam.classroom }}</text>
-    </div>
+    <!-- 可滚动区域 -->
+    <scroll class="exam-scroll" scroll-y="true" bounces="true">
 
-    <div if="{{ !nearestExam }}" class="main-card">
-      <text class="no-exam">暂无考试安排</text>
-    </div>
-
-    <!-- 后续考试列表 -->
-    <div if="{{ upcomingExams.length > 1 }}" class="list-section">
-      <text class="list-title">后续考试</text>
-      <div class="exam-list">
-        <div for="{{ upcomingExams }}" class="exam-item" if="{{ $idx > 0 }}">
-          <div class="exam-info">
+      <!-- 考试列表 -->
+      <div if="{{ examList.length > 0 }}" class="exam-list">
+        <div for="{{ examList }}" class="exam-item">
+          <div class="exam-main">
             <text class="exam-name">{{ $item.course }}</text>
             <text class="exam-time">{{ $item.dateText }} · {{ $item.startTime }}</text>
             <text class="exam-place">{{ $item.classroom }}</text>
@@ -36,11 +22,16 @@
           </div>
         </div>
       </div>
-    </div>
 
-    <div if="{{ upcomingExams.length <= 1 }}" class="empty">
-      <text class="empty-text">没有更多考试</text>
-    </div>
+      <!-- 空状态 -->
+      <div if="{{ examList.length === 0 }}" class="empty">
+        <text class="empty-text">暂无考试安排</text>
+      </div>
+
+      <!-- 底部安全空间 -->
+      <div class="bottom-safe-space"></div>
+
+    </scroll>
   </div>
 </template>
 
@@ -64,77 +55,17 @@
   color: #FFFFFF;
 }
 
-.main-card {
-  width: 380px;
-  height: 185px;
-  border-radius: 28px;
-  background-color: #171717;
-  border: 1px solid rgba(255, 107, 107, 0.4);
+.exam-scroll {
+  width: 400px;
+  height: 380px;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  margin-bottom: 20px;
-}
-
-.countdown-circle {
-  width: 80px;
-  height: 80px;
-  border-radius: 40px;
-  background-color: rgba(255, 107, 107, 0.2);
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 12px;
-}
-
-.countdown-value {
-  font-size: 32px;
-  font-weight: 700;
-  color: #FF6B6B;
-}
-
-.countdown-unit {
-  font-size: 14px;
-  color: #FF6B6B;
-}
-
-.exam-course {
-  font-size: 28px;
-  font-weight: 700;
-  color: #FFFFFF;
-  margin-bottom: 6px;
-}
-
-.exam-date {
-  font-size: 18px;
-  color: #CFCFCF;
-  margin-bottom: 4px;
-}
-
-.exam-location {
-  font-size: 16px;
-  color: #A0A0A0;
-}
-
-.no-exam {
-  font-size: 20px;
-  color: #8F8F8F;
-}
-
-.list-section {
-  width: 380px;
-  flex-direction: column;
-}
-
-.list-title {
-  font-size: 16px;
-  color: #8F8F8F;
-  margin-bottom: 10px;
-  margin-left: 5px;
 }
 
 .exam-list {
+  width: 380px;
   flex-direction: column;
+  flex-shrink: 0;
 }
 
 .exam-item {
@@ -142,26 +73,29 @@
   align-items: center;
   background-color: #171717;
   border-radius: 20px;
+  border: 1px solid rgba(255, 107, 107, 0.3);
   padding: 15px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+  min-height: 80px;
 }
 
-.exam-info {
+.exam-main {
   flex: 1;
   flex-direction: column;
 }
 
 .exam-name {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
   color: #FFFFFF;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .exam-time {
-  font-size: 14px;
+  font-size: 15px;
   color: #CFCFCF;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 
 .exam-place {
@@ -173,14 +107,16 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 55px;
-  height: 55px;
+  width: 60px;
+  height: 60px;
   border-radius: 18px;
   background-color: rgba(255, 107, 107, 0.15);
+  flex-shrink: 0;
+  margin-left: 10px;
 }
 
 .badge-value {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
   color: #FF6B6B;
 }
@@ -194,68 +130,67 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 80px;
+  height: 100px;
+  flex-shrink: 0;
 }
 
 .empty-text {
-  font-size: 16px;
-  color: #666666;
+  font-size: 18px;
+  color: #8F8F8F;
+}
+
+.bottom-safe-space {
+  width: 380px;
+  height: 80px;
+  flex-shrink: 0;
 }
 </style>
 
 <script>
 import router from '@system.router'
-import { getNearestExam, getUpcomingExams, getExamCountdown, formatExamDate } from '../../common/exam'
+import { getUpcomingExams, getExamCountdown, formatExamDate } from '../../common/exam'
 import { getNow } from '../../common/time'
 import { createGestureState, handleTouchStart, handleTouchMove, handleTouchEnd } from '../../common/gesture'
-import { ensureStorageReady } from '../../common/storage'
+import { ensureStorageReady, refreshExamsFromStorage } from '../../common/storage'
 
 const DEBUG_NOW = null
 
 export default {
   private: {
-    nearestExam: null,
-    countdown: { value: 0, unit: '' },
-    examDate: '',
-    upcomingExams: [],
+    examList: [],
     gesture: createGestureState()
   },
 
   onInit() {
-    ensureStorageReady().then(() => {
-      this.loadExams()
-    }).catch((err) => {
-      console.error('Failed to initialize storage on exam:', err)
-    })
+    ensureStorageReady()
+      .then(() => refreshExamsFromStorage())
+      .then(() => {
+        this.loadExams()
+      })
+      .catch((err) => {
+        console.error('Failed to initialize storage on exam:', err)
+        this.loadExams()
+      })
   },
 
   onShow() {
-    ensureStorageReady().then(() => {
-      this.loadExams()
-    }).catch((err) => {
-      console.error('Failed to refresh exams:', err)
-    })
+    ensureStorageReady()
+      .then(() => refreshExamsFromStorage())
+      .then(() => {
+        this.loadExams()
+      })
+      .catch((err) => {
+        console.error('Failed to refresh exams:', err)
+        this.loadExams()
+      })
   },
 
   loadExams() {
-    // 重置页面数据，避免旧状态残留
-    this.nearestExam = null
-    this.countdown = { value: 0, unit: '' }
-    this.examDate = ''
-    this.upcomingExams = []
-
     const now = getNow(DEBUG_NOW)
 
-    // 最近考试
-    this.nearestExam = getNearestExam(now)
-    if (this.nearestExam) {
-      this.countdown = getExamCountdown(this.nearestExam, now)
-      this.examDate = formatExamDate(this.nearestExam)
-    }
-
-    // 所有即将到来的考试
+    // 获取所有即将到来的考试
     const exams = getUpcomingExams(now)
-    this.upcomingExams = exams.map(e => ({
+    this.examList = exams.map(e => ({
       ...e,
       dateText: formatExamDate(e).split(' · ')[0],
       countdown: getExamCountdown(e, now)
