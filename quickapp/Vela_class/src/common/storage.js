@@ -300,6 +300,46 @@ export function refreshCoursesFromStorage() {
 }
 
 /**
+ * 添加新课程并持久化
+ * @param {object} courseData 课程数据（不含id）
+ * @returns {Promise<object>} 新课程对象
+ */
+export function addCourse(courseData) {
+  return new Promise((resolve, reject) => {
+    // 生成唯一ID
+    const newId = 'course_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+    
+    // 创建新课程对象
+    const newCourse = {
+      id: newId,
+      ...courseData
+    }
+
+    // 保存旧缓存用于回滚
+    const oldCourseCache = courseCache
+
+    // 不可变更新：创建新数组
+    courseCache = [...courseCache, newCourse]
+
+    // 持久化到 storage
+    storage.set({
+      key: STORAGE_KEYS.COURSES,
+      value: JSON.stringify(courseCache),
+      success: function () {
+        console.log('Course added and saved:', newId)
+        resolve(newCourse)
+      },
+      fail: function (data, code) {
+        console.error('Failed to save course:', code)
+        // 回滚到旧缓存
+        courseCache = oldCourseCache
+        reject(new Error('Failed to save course'))
+      }
+    })
+  })
+}
+
+/**
  * 重置为 Mock 数据（调试用）
  * @returns {Promise}
  */

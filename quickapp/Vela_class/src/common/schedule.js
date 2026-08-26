@@ -3,7 +3,7 @@
  * 提供课程筛选、当前课程判断、下一课程查找等功能
  */
 
-import { courses } from './data'
+import { getCourses } from './storage'
 import { getNow, parseTimeToDate, diffMinutes, getWeekdayNumber, formatRemainingMinutes } from './time'
 
 /**
@@ -14,7 +14,7 @@ import { getNow, parseTimeToDate, diffMinutes, getWeekdayNumber, formatRemaining
  */
 export function getTodayCourses(now, currentWeek = 1) {
   const weekday = getWeekdayNumber(now)
-  return courses
+  return getCourses()
     .filter(c => c.weekday === weekday && c.weeks.includes(currentWeek))
     .sort((a, b) => a.startTime.localeCompare(b.startTime))
 }
@@ -26,7 +26,7 @@ export function getTodayCourses(now, currentWeek = 1) {
  * @returns {Array}
  */
 export function getCoursesByWeekday(weekday, currentWeek = 1) {
-  return courses
+  return getCourses()
     .filter(c => c.weekday === weekday && c.weeks.includes(currentWeek))
     .sort((a, b) => a.startTime.localeCompare(b.startTime))
 }
@@ -37,7 +37,7 @@ export function getCoursesByWeekday(weekday, currentWeek = 1) {
  * @returns {Array}
  */
 export function getAllCoursesByWeekday(weekday) {
-  return courses
+  return getCourses()
     .filter(c => c.weekday === weekday)
     .sort((a, b) => a.startTime.localeCompare(b.startTime))
 }

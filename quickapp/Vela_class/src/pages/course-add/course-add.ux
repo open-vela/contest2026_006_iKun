@@ -1,0 +1,688 @@
+<import name="input-method" src="../../components/InputMethod/InputMethod.ux"></import>
+
+<template>
+  <div class="page" ontouchstart="onTouchStart" ontouchmove="onTouchMove" ontouchend="onTouchEnd">
+    <!-- 顶部标题 -->
+    <div class="header">
+      <text class="title">添加课程</text>
+      <text class="step-text">步骤 {{ step }}/3</text>
+      <div if="{{ !keyboardHidden }}" class="btn-done" @click="hideKeyboard">
+        <text class="btn-done-text">完成</text>
+      </div>
+    </div>
+
+    <!-- 可滚动内容区域 -->
+    <scroll id="formScroll" class="form-scroll" scroll-y="true" bounces="true">
+      <!-- 步骤1：基本信息 -->
+      <div if="{{ step === 1 }}" class="content">
+        <div class="form-group">
+          <text class="label">课程名称</text>
+          <div class="input-wrapper" @click="showKeyboard('name')">
+            <text if="{{ !name }}" class="placeholder-text">请输入课程名称</text>
+            <text class="input-text">{{ name }}</text>
+          </div>
+        </div>
+        <div class="form-group">
+          <text class="label">教师</text>
+          <div class="input-wrapper" @click="showKeyboard('teacher')">
+            <text if="{{ !teacher }}" class="placeholder-text">请输入教师姓名</text>
+            <text class="input-text">{{ teacher }}</text>
+          </div>
+        </div>
+        <div class="form-group">
+          <text class="label">教室</text>
+          <div class="input-wrapper" @click="showKeyboard('classroom')">
+            <text if="{{ !classroom }}" class="placeholder-text">请输入教室</text>
+            <text class="input-text">{{ classroom }}</text>
+          </div>
+        </div>
+        <div class="btn-next" @click="nextStep">
+          <text class="btn-text">下一步</text>
+        </div>
+        <!-- 底部安全空间 -->
+        <div class="bottom-safe-space"></div>
+      </div>
+
+      <!-- 步骤2：时间 -->
+      <div if="{{ step === 2 }}" class="content">
+        <div class="form-group">
+          <text class="label">星期</text>
+          <div class="weekday-selector">
+            <div for="{{ weekdays }}" class="weekday-btn {{ selectedWeekday === $item.value ? 'weekday-active' : '' }}" @click="selectWeekday($item.value)">
+              <text class="weekday-text">{{ $item.label }}</text>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <text class="label">开始时间</text>
+          <div class="time-selector">
+            <div class="time-btn" @click="openStartPicker">
+              <text class="time-text">{{ startTime || '选择时间' }}</text>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <text class="label">结束时间</text>
+          <div class="time-selector">
+            <div class="time-btn" @click="openEndPicker">
+              <text class="time-text">{{ endTime || '选择时间' }}</text>
+            </div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <div class="btn-back" @click="prevStep">
+            <text class="btn-text">上一步</text>
+          </div>
+          <div class="btn-next" @click="nextStep">
+            <text class="btn-text">下一步</text>
+          </div>
+        </div>
+        <!-- 底部安全空间 -->
+        <div class="bottom-safe-space"></div>
+      </div>
+
+      <!-- 步骤3：周次 -->
+      <div if="{{ step === 3 }}" class="content">
+        <div class="form-group">
+          <text class="label">上课周次</text>
+          <div class="week-type-selector">
+            <div class="week-type-btn {{ weekType === 'all' ? 'week-type-active' : '' }}" @click="selectWeekType('all')">
+              <text class="week-type-text">全周</text>
+            </div>
+            <div class="week-type-btn {{ weekType === 'odd' ? 'week-type-active' : '' }}" @click="selectWeekType('odd')">
+              <text class="week-type-text">单周</text>
+            </div>
+            <div class="week-type-btn {{ weekType === 'even' ? 'week-type-active' : '' }}" @click="selectWeekType('even')">
+              <text class="week-type-text">双周</text>
+            </div>
+            <div class="week-type-btn {{ weekType === 'custom' ? 'week-type-active' : '' }}" @click="selectWeekType('custom')">
+              <text class="week-type-text">自定义</text>
+            </div>
+          </div>
+        </div>
+        <div if="{{ weekType === 'custom' }}" class="form-group">
+          <text class="label">选择周次（点击切换）</text>
+          <div class="weeks-grid">
+            <div for="{{ weekOptions }}" class="week-btn {{ $item.selected ? 'week-selected' : '' }}" @click="toggleWeek($item.value)">
+              <text class="week-num">{{ $item.value }}</text>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <text class="label">已选周次：{{ weeksText }}</text>
+        </div>
+        <div class="btn-row">
+          <div class="btn-back" @click="prevStep">
+            <text class="btn-text">上一步</text>
+          </div>
+          <div class="btn-save" @click="saveCourse">
+            <text class="btn-text">保存</text>
+          </div>
+        </div>
+        <!-- 底部安全空间 -->
+        <div class="bottom-safe-space"></div>
+      </div>
+    </scroll>
+
+    <!-- 时间选择器弹窗 -->
+    <div if="{{ showStartPicker || showEndPicker }}" class="picker-mask">
+      <div class="picker-popup">
+        <text class="picker-title">选择时间</text>
+        <scroll class="time-scroll" scroll-y="true">
+          <div class="time-options">
+            <div for="{{ timeOptions }}" class="time-option" onclick="selectTime($item)">
+              <text class="time-option-text">{{ $item }}</text>
+            </div>
+          </div>
+        </scroll>
+        <div class="picker-btn" onclick="closePicker">
+          <text class="picker-btn-text">取消</text>
+        </div>
+      </div>
+    </div>
+
+    <!-- 输入法组件 -->
+    <input-method
+      hide="{{ keyboardHidden }}"
+      screentype="circle"
+      keyboardtype="QWERTY"
+      maxlength="5"
+      @complete="onComplete"
+      @delete="onDelete"
+    ></input-method>
+  </div>
+</template>
+
+<style>
+.page {
+  flex-direction: column;
+  align-items: center;
+  background-color: #000000;
+  width: 466px;
+  height: 466px;
+  padding-top: 35px;
+}
+
+.header {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  position: relative;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.step-text {
+  font-size: 14px;
+  color: #A0A0A0;
+  margin-top: 3px;
+}
+
+.btn-done {
+  position: absolute;
+  right: 10px;
+  padding: 8px 15px;
+  background-color: #4FA3FF;
+  border-radius: 15px;
+}
+
+.btn-done-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.form-scroll {
+  width: 400px;
+  height: 385px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.content {
+  width: 380px;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.form-group {
+  width: 100%;
+  flex-direction: column;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.label {
+  font-size: 15px;
+  color: #B0B0B0;
+  margin-bottom: 6px;
+  margin-left: 5px;
+}
+
+.input-wrapper {
+  width: 100%;
+  height: 52px;
+  background-color: #1A1A1A;
+  border-radius: 14px;
+  flex-direction: row;
+  align-items: center;
+  padding: 0 18px;
+}
+
+.placeholder-text {
+  font-size: 16px;
+  color: #666666;
+}
+
+.input-text {
+  font-size: 17px;
+  color: #FFFFFF;
+}
+
+.weekday-selector {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.weekday-btn {
+  width: 48px;
+  height: 40px;
+  border-radius: 10px;
+  background-color: #171717;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.weekday-active {
+  background-color: #4FA3FF;
+}
+
+.weekday-text {
+  font-size: 14px;
+  color: #FFFFFF;
+}
+
+.time-selector {
+  flex-direction: row;
+}
+
+.time-btn {
+  flex: 1;
+  height: 44px;
+  background-color: #171717;
+  border-radius: 12px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.time-text {
+  font-size: 16px;
+  color: #FFFFFF;
+}
+
+.week-type-selector {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.week-type-btn {
+  width: 85px;
+  height: 40px;
+  border-radius: 10px;
+  background-color: #171717;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.week-type-active {
+  background-color: #4FA3FF;
+}
+
+.week-type-text {
+  font-size: 14px;
+  color: #FFFFFF;
+}
+
+.weeks-grid {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.week-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background-color: #171717;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  margin-bottom: 8px;
+}
+
+.week-selected {
+  background-color: #4FA3FF;
+}
+
+.week-num {
+  font-size: 14px;
+  color: #FFFFFF;
+}
+
+.btn-row {
+  flex-direction: row;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.btn-next, .btn-save {
+  width: 170px;
+  height: 46px;
+  border-radius: 23px;
+  background-color: #4FA3FF;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-back {
+  width: 170px;
+  height: 46px;
+  border-radius: 23px;
+  background-color: #2B2B2B;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.picker-mask {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 466px;
+  height: 466px;
+  background-color: rgba(0, 0, 0, 0.8);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.picker-popup {
+  width: 350px;
+  background-color: #171717;
+  border-radius: 20px;
+  padding: 20px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.picker-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #FFFFFF;
+  margin-bottom: 15px;
+}
+
+.time-scroll {
+  width: 100%;
+  height: 200px;
+}
+
+.time-options {
+  width: 100%;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.time-option {
+  width: 100%;
+  height: 44px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-bottom-width: 1px;
+  border-bottom-color: #2B2B2B;
+  flex-shrink: 0;
+}
+
+.time-option-text {
+  font-size: 16px;
+  color: #FFFFFF;
+}
+
+.bottom-safe-space {
+  width: 100%;
+  height: 80px;
+  flex-shrink: 0;
+}
+
+.picker-btn {
+  width: 100%;
+  height: 44px;
+  margin-top: 15px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.picker-btn-text {
+  font-size: 16px;
+  color: #4FA3FF;
+}
+</style>
+
+<script>
+import router from '@system.router'
+import { addCourse, ensureStorageReady } from '../../common/storage'
+import { createGestureState, handleTouchStart, handleTouchMove, handleTouchEnd } from '../../common/gesture'
+
+export default {
+  private: {
+    step: 1,
+    name: '',
+    teacher: '',
+    classroom: '',
+    selectedWeekday: 1,
+    startTime: '',
+    endTime: '',
+    weekType: 'all',
+    weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+    weeksText: '1-16周',
+    showStartPicker: false,
+    showEndPicker: false,
+    keyboardHidden: true,
+    currentInputField: '',
+    gesture: createGestureState(),
+    weekdays: [
+      { label: '一', value: 1 },
+      { label: '二', value: 2 },
+      { label: '三', value: 3 },
+      { label: '四', value: 4 },
+      { label: '五', value: 5 },
+      { label: '六', value: 6 },
+      { label: '日', value: 7 }
+    ],
+    weekOptions: [],
+    timeOptions: []
+  },
+
+  onInit() {
+    this.initWeekOptions()
+    this.initTimeOptions()
+  },
+
+  showKeyboard(field) {
+    this.currentInputField = field
+    this.keyboardHidden = false
+  },
+
+  hideKeyboard() {
+    this.keyboardHidden = true
+  },
+
+  onComplete(evt) {
+    const content = evt.detail.content
+    if (this.currentInputField === 'name') {
+      this.name += content
+    } else if (this.currentInputField === 'teacher') {
+      this.teacher += content
+    } else if (this.currentInputField === 'classroom') {
+      this.classroom += content
+    }
+  },
+
+  onDelete() {
+    if (this.currentInputField === 'name' && this.name.length > 0) {
+      this.name = this.name.slice(0, -1)
+    } else if (this.currentInputField === 'teacher' && this.teacher.length > 0) {
+      this.teacher = this.teacher.slice(0, -1)
+    } else if (this.currentInputField === 'classroom' && this.classroom.length > 0) {
+      this.classroom = this.classroom.slice(0, -1)
+    }
+  },
+
+  openStartPicker() {
+    this.keyboardHidden = true
+    this.showStartPicker = true
+  },
+
+  openEndPicker() {
+    this.keyboardHidden = true
+    this.showEndPicker = true
+  },
+
+  initWeekOptions() {
+    this.weekOptions = []
+    for (let i = 1; i <= 16; i++) {
+      this.weekOptions.push({ value: i, selected: true })
+    }
+  },
+
+  initTimeOptions() {
+    this.timeOptions = []
+    for (let h = 8; h <= 20; h++) {
+      for (let m = 0; m < 60; m += 5) {
+        const time = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0')
+        this.timeOptions.push(time)
+      }
+    }
+  },
+
+  selectWeekday(day) {
+    this.selectedWeekday = day
+  },
+
+  selectWeekType(type) {
+    this.weekType = type
+    switch (type) {
+      case 'all':
+        this.weeks = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+        this.weeksText = '1-16周'
+        this.weekOptions.forEach(w => w.selected = true)
+        break
+      case 'odd':
+        this.weeks = [1, 3, 5, 7, 9, 11, 13, 15]
+        this.weeksText = '单周'
+        this.weekOptions.forEach(w => w.selected = w.value % 2 === 1)
+        break
+      case 'even':
+        this.weeks = [2, 4, 6, 8, 10, 12, 14, 16]
+        this.weeksText = '双周'
+        this.weekOptions.forEach(w => w.selected = w.value % 2 === 0)
+        break
+      case 'custom':
+        this.weeks = []
+        this.weekOptions.forEach(w => w.selected = false)
+        this.weeksText = '未选择'
+        break
+    }
+  },
+
+  toggleWeek(week) {
+    const opt = this.weekOptions.find(w => w.value === week)
+    if (opt) {
+      opt.selected = !opt.selected
+    }
+    this.weeks = this.weekOptions.filter(w => w.selected).map(w => w.value)
+    if (this.weeks.length === 0) {
+      this.weeksText = '未选择'
+    } else if (this.weeks.length === 16) {
+      this.weeksText = '1-16周'
+    } else {
+      this.weeksText = this.weeks.join(',') + '周'
+    }
+  },
+
+  selectTime(time) {
+    if (this.showStartPicker) {
+      this.startTime = time
+      this.showStartPicker = false
+    } else {
+      this.endTime = time
+      this.showEndPicker = false
+    }
+  },
+
+  closePicker() {
+    this.showStartPicker = false
+    this.showEndPicker = false
+  },
+
+  nextStep() {
+    if (this.step === 1) {
+      if (!this.name) {
+        console.warn('请输入课程名称')
+        return
+      }
+      this.keyboardHidden = true
+    }
+    if (this.step === 2) {
+      if (!this.startTime || !this.endTime) {
+        console.warn('请选择时间')
+        return
+      }
+      if (this.startTime >= this.endTime) {
+        console.warn('结束时间必须晚于开始时间')
+        return
+      }
+    }
+    if (this.step < 3) {
+      this.step++
+    }
+  },
+
+  prevStep() {
+    if (this.step > 1) {
+      this.step--
+    }
+  },
+
+  saveCourse() {
+    if (this.weeks.length === 0) {
+      console.warn('请选择上课周次')
+      return
+    }
+
+    this.keyboardHidden = true
+
+    const courseData = {
+      name: this.name,
+      teacher: this.teacher,
+      classroom: this.classroom,
+      weekday: this.selectedWeekday,
+      startTime: this.startTime,
+      endTime: this.endTime,
+      weeks: this.weeks
+    }
+
+    ensureStorageReady()
+      .then(() => addCourse(courseData))
+      .then((newCourse) => {
+        console.log('课程添加成功:', newCourse)
+        router.back()
+      })
+      .catch((err) => {
+        console.error('添加课程失败:', err)
+      })
+  },
+
+  onTouchStart(e) {
+    handleTouchStart(this.gesture, e)
+  },
+
+  onTouchMove(e) {
+    handleTouchMove(this.gesture, e)
+  },
+
+  onTouchEnd(e) {
+    if (handleTouchEnd(this.gesture, e)) {
+      router.back()
+    }
+  },
+
+  goBack() {
+    router.back()
+  }
+}
+</script>

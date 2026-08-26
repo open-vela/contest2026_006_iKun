@@ -5,16 +5,21 @@
       <text class="title">课表</text>
     </div>
 
-    <!-- 模式切换 -->
-    <div class="mode-switch">
-      <div class="mode-btn {{ mode === 'today' ? 'mode-active' : '' }}" onclick="switchMode('today')">
-        <text class="mode-text {{ mode === 'today' ? 'mode-text-active' : '' }}">今天</text>
+    <!-- 模式切换 + 添加按钮 -->
+    <div class="mode-row">
+      <div class="mode-switch">
+        <div class="mode-btn {{ mode === 'today' ? 'mode-active' : '' }}" onclick="switchMode('today')">
+          <text class="mode-text {{ mode === 'today' ? 'mode-text-active' : '' }}">今天</text>
+        </div>
+        <div class="mode-btn {{ mode === 'week' ? 'mode-active' : '' }}" onclick="switchMode('week')">
+          <text class="mode-text {{ mode === 'week' ? 'mode-text-active' : '' }}">本周</text>
+        </div>
+        <div class="mode-btn {{ mode === 'all' ? 'mode-active' : '' }}" onclick="switchMode('all')">
+          <text class="mode-text {{ mode === 'all' ? 'mode-text-active' : '' }}">全部</text>
+        </div>
       </div>
-      <div class="mode-btn {{ mode === 'week' ? 'mode-active' : '' }}" onclick="switchMode('week')">
-        <text class="mode-text {{ mode === 'week' ? 'mode-text-active' : '' }}">本周</text>
-      </div>
-      <div class="mode-btn {{ mode === 'all' ? 'mode-active' : '' }}" onclick="switchMode('all')">
-        <text class="mode-text {{ mode === 'all' ? 'mode-text-active' : '' }}">全部</text>
+      <div class="add-btn" onclick="goToAddCourse">
+        <text class="add-text">+</text>
       </div>
     </div>
 
@@ -130,7 +135,7 @@
 }
 
 .header {
-  margin-bottom: 15px;
+  margin-bottom: 12px;
 }
 
 .title {
@@ -139,12 +144,35 @@
   color: #FFFFFF;
 }
 
+.mode-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
 .mode-switch {
   flex-direction: row;
   background-color: #171717;
   border-radius: 20px;
   padding: 4px;
-  margin-bottom: 15px;
+}
+
+.add-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  background-color: #4FA3FF;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-left: 12px;
+}
+
+.add-text {
+  font-size: 24px;
+  font-weight: 600;
+  color: #FFFFFF;
 }
 
 .mode-btn {
@@ -472,6 +500,7 @@ import router from '@system.router'
 import { getTodayCourses, getCoursesByWeekday, getAllCoursesByWeekday, formatCourseWeeks, getCourseStatus, getCourseRemainingTime } from '../../common/schedule'
 import { getNow, getWeekdayNumber } from '../../common/time'
 import { createGestureState, handleTouchStart, handleTouchMove, handleTouchEnd } from '../../common/gesture'
+import { ensureStorageReady, refreshCoursesFromStorage } from '../../common/storage'
 
 // 调试用当前教学周
 // TODO: 后续接入真实学期配置后，根据学期开始日期自动计算 currentWeek
@@ -512,6 +541,20 @@ export default {
     this.loadTodayCourses(now)
     this.loadWeekCourses(now)
     this.loadAllCourses()
+  },
+
+  onShow() {
+    ensureStorageReady()
+      .then(() => refreshCoursesFromStorage())
+      .then(() => {
+        const now = getNow(DEBUG_NOW)
+        this.loadTodayCourses(now)
+        this.loadWeekCourses(now)
+        this.loadAllCourses()
+      })
+      .catch((err) => {
+        console.error('Failed to refresh schedule:', err)
+      })
   },
 
   // 计算 selectedWeek 对应的日期
@@ -620,6 +663,12 @@ export default {
       params: {
         courseId: courseId
       }
+    })
+  },
+
+  goToAddCourse() {
+    router.push({
+      uri: '/pages/course-add'
     })
   },
 

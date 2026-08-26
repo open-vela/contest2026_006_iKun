@@ -17,6 +17,9 @@
     },
     {
       "name": "system.storage"
+    },
+    {
+      "name": "system.device"
     }
   ],
   "config": {
@@ -43,6 +46,9 @@
       },
       "pages/task-detail": {
         "component": "task-detail"
+      },
+      "pages/course-add": {
+        "component": "course-add"
       }
     }
   }
