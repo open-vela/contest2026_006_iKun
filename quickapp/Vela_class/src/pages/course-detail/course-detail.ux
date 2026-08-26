@@ -1,5 +1,5 @@
 <template>
-  <div class="page" ontouchstart="onTouchStart" ontouchmove="onTouchMove" ontouchend="onTouchEnd">
+  <div class="page">
     <div if="{{ course }}" class="content">
       <!-- 课程名称 -->
       <text class="course-name">{{ course.name }}</text>
@@ -179,11 +179,9 @@
 </style>
 
 <script>
-import router from '@system.router'
 import { courses } from '../../common/data'
 import { getCourseStatus, getCourseProgress, getCourseRemainingTime, getMinutesUntilStart } from '../../common/schedule'
 import { getNow } from '../../common/time'
-import { createGestureState, handleTouchStart, handleTouchMove, handleTouchEnd } from '../../common/gesture'
 
 const DEBUG_NOW = null
 
@@ -198,8 +196,7 @@ export default {
     progress: 0,
     progressPercent: 0,
     remainingMinutes: 0,
-    minutesUntilStart: 0,
-    gesture: createGestureState()
+    minutesUntilStart: 0
   },
 
   onInit() {
@@ -223,24 +220,6 @@ export default {
         this.minutesUntilStart = getMinutesUntilStart(this.course, now)
       }
     }
-  },
-
-  onTouchStart(e) {
-    handleTouchStart(this.gesture, e)
-  },
-
-  onTouchMove(e) {
-    handleTouchMove(this.gesture, e)
-  },
-
-  onTouchEnd(e) {
-    if (handleTouchEnd(this.gesture, e)) {
-      router.back()
-    }
-  },
-
-  goBack() {
-    router.back()
   }
 }
 </script>

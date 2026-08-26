@@ -1,5 +1,5 @@
 <template>
-  <div class="page" ontouchstart="onTouchStart" ontouchmove="onTouchMove" ontouchend="onTouchEnd">
+  <div class="page">
     <!-- 顶部标题 -->
     <div class="header">
       <text class="title">考试</text>
@@ -147,18 +147,15 @@
 </style>
 
 <script>
-import router from '@system.router'
 import { getUpcomingExams, getExamCountdown, formatExamDate } from '../../common/exam'
 import { getNow } from '../../common/time'
-import { createGestureState, handleTouchStart, handleTouchMove, handleTouchEnd } from '../../common/gesture'
 import { ensureStorageReady, refreshExamsFromStorage } from '../../common/storage'
 
 const DEBUG_NOW = null
 
 export default {
   private: {
-    examList: [],
-    gesture: createGestureState()
+    examList: []
   },
 
   onInit() {
@@ -195,24 +192,6 @@ export default {
       dateText: formatExamDate(e).split(' · ')[0],
       countdown: getExamCountdown(e, now)
     }))
-  },
-
-  onTouchStart(e) {
-    handleTouchStart(this.gesture, e)
-  },
-
-  onTouchMove(e) {
-    handleTouchMove(this.gesture, e)
-  },
-
-  onTouchEnd(e) {
-    if (handleTouchEnd(this.gesture, e)) {
-      router.back()
-    }
-  },
-
-  goBack() {
-    router.back()
   }
 }
 </script>

@@ -1,14 +1,11 @@
 <import name="input-method" src="../../components/InputMethod/InputMethod.ux"></import>
 
 <template>
-  <div class="page" ontouchstart="onTouchStart" ontouchmove="onTouchMove" ontouchend="onTouchEnd">
+  <div class="page">
     <!-- 顶部标题 -->
     <div class="header">
       <text class="title">添加课程</text>
       <text class="step-text">步骤 {{ step }}/3</text>
-      <div if="{{ !keyboardHidden }}" class="btn-done" @click="hideKeyboard">
-        <text class="btn-done-text">完成</text>
-      </div>
     </div>
 
     <!-- 可滚动内容区域 -->
@@ -164,11 +161,9 @@
 }
 
 .header {
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
   margin-bottom: 8px;
-  position: relative;
 }
 
 .title {
@@ -181,20 +176,6 @@
   font-size: 14px;
   color: #A0A0A0;
   margin-top: 3px;
-}
-
-.btn-done {
-  position: absolute;
-  right: 10px;
-  padding: 8px 15px;
-  background-color: #4FA3FF;
-  border-radius: 15px;
-}
-
-.btn-done-text {
-  font-size: 14px;
-  font-weight: 600;
-  color: #FFFFFF;
 }
 
 .form-scroll {
@@ -455,7 +436,6 @@
 <script>
 import router from '@system.router'
 import { addCourse, ensureStorageReady } from '../../common/storage'
-import { createGestureState, handleTouchStart, handleTouchMove, handleTouchEnd } from '../../common/gesture'
 
 export default {
   private: {
@@ -473,7 +453,6 @@ export default {
     showEndPicker: false,
     keyboardHidden: true,
     currentInputField: '',
-    gesture: createGestureState(),
     weekdays: [
       { label: '一', value: 1 },
       { label: '二', value: 2 },
@@ -667,22 +646,14 @@ export default {
       })
   },
 
-  onTouchStart(e) {
-    handleTouchStart(this.gesture, e)
-  },
-
-  onTouchMove(e) {
-    handleTouchMove(this.gesture, e)
-  },
-
-  onTouchEnd(e) {
-    if (handleTouchEnd(this.gesture, e)) {
-      router.back()
+  onBackPress() {
+    // 如果输入法正在显示，先关闭输入法
+    if (!this.keyboardHidden) {
+      this.keyboardHidden = true
+      return true // 拦截返回事件，不退出页面
     }
-  },
-
-  goBack() {
-    router.back()
+    // 输入法已隐藏，不拦截，让系统执行默认返回
+    return false
   }
 }
 </script>

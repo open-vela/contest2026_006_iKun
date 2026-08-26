@@ -1,5 +1,5 @@
 <template>
-  <div class="page" ontouchstart="onTouchStart" ontouchmove="onTouchMove" ontouchend="onTouchEnd">
+  <div class="page">
     <div if="{{ task }}" class="content">
       <!-- 状态图标 -->
       <div class="status-icon {{ task.finished ? 'icon-done' : 'icon-pending' }}">
@@ -182,11 +182,9 @@
 </style>
 
 <script>
-import router from '@system.router'
 import { getTasks, updateTaskStatus, ensureStorageReady, refreshTasksFromStorage } from '../../common/storage'
 import { getTaskCountdown, formatTaskCountdown, getTaskTypeText } from '../../common/task'
 import { getNow, parseDateTime } from '../../common/time'
-import { createGestureState, handleTouchStart, handleTouchMove, handleTouchEnd } from '../../common/gesture'
 
 const DEBUG_NOW = null
 
@@ -201,8 +199,7 @@ export default {
     deadlineText: '',
     countdown: { value: 0, unit: '', isUrgent: false, isCritical: false },
     countdownText: '',
-    isUpdating: false,
-    gesture: createGestureState()
+    isUpdating: false
   },
 
   onInit() {
@@ -258,24 +255,6 @@ export default {
           this.isUpdating = false
         })
     }
-  },
-
-  onTouchStart(e) {
-    handleTouchStart(this.gesture, e)
-  },
-
-  onTouchMove(e) {
-    handleTouchMove(this.gesture, e)
-  },
-
-  onTouchEnd(e) {
-    if (handleTouchEnd(this.gesture, e)) {
-      router.back()
-    }
-  },
-
-  goBack() {
-    router.back()
   }
 }
 </script>

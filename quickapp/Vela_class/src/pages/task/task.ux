@@ -1,5 +1,5 @@
 <template>
-  <div class="page" ontouchstart="onTouchStart" ontouchmove="onTouchMove" ontouchend="onTouchEnd">
+  <div class="page">
     <!-- 顶部标题 -->
     <div class="header">
       <text class="title">待办</text>
@@ -242,7 +242,6 @@ import router from '@system.router'
 import { getOverdueTasks, getTodayTasks, getWeekTasks, getFutureTasks, getFinishedTasks, getTaskCountdown, formatTaskCountdown, toggleTaskStatus } from '../../common/task'
 import { getTasks, ensureStorageReady, refreshTasksFromStorage } from '../../common/storage'
 import { getNow, parseDateTime } from '../../common/time'
-import { createGestureState, handleTouchStart, handleTouchMove, handleTouchEnd } from '../../common/gesture'
 
 const DEBUG_NOW = null
 
@@ -253,8 +252,7 @@ export default {
     weekTasks: [],
     futureTasks: [],
     finishedTasks: [],
-    isUpdating: false,
-    gesture: createGestureState()
+    isUpdating: false
   },
 
   onInit() {
@@ -376,24 +374,6 @@ export default {
         taskId: taskId
       }
     })
-  },
-
-  onTouchStart(e) {
-    handleTouchStart(this.gesture, e)
-  },
-
-  onTouchMove(e) {
-    handleTouchMove(this.gesture, e)
-  },
-
-  onTouchEnd(e) {
-    if (handleTouchEnd(this.gesture, e)) {
-      router.back()
-    }
-  },
-
-  goBack() {
-    router.back()
   }
 }
 </script>

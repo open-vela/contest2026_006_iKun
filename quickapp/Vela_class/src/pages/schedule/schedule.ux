@@ -1,5 +1,5 @@
 <template>
-  <div class="page" ontouchstart="onTouchStart" ontouchmove="onTouchMove" ontouchend="onTouchEnd">
+  <div class="page">
     <!-- 顶部标题 -->
     <div class="header">
       <text class="title">课表</text>
@@ -499,7 +499,6 @@
 import router from '@system.router'
 import { getTodayCourses, getCoursesByWeekday, getAllCoursesByWeekday, formatCourseWeeks, getCourseStatus, getCourseRemainingTime } from '../../common/schedule'
 import { getNow, getWeekdayNumber } from '../../common/time'
-import { createGestureState, handleTouchStart, handleTouchMove, handleTouchEnd } from '../../common/gesture'
 import { ensureStorageReady, refreshCoursesFromStorage } from '../../common/storage'
 
 // 调试用当前教学周
@@ -529,8 +528,7 @@ export default {
       { label: '五', value: 5, date: 0, month: 0, isToday: false },
       { label: '六', value: 6, date: 0, month: 0, isToday: false },
       { label: '日', value: 7, date: 0, month: 0, isToday: false }
-    ],
-    gesture: createGestureState()
+    ]
   },
 
   onInit() {
@@ -670,24 +668,6 @@ export default {
     router.push({
       uri: '/pages/course-add'
     })
-  },
-
-  onTouchStart(e) {
-    handleTouchStart(this.gesture, e)
-  },
-
-  onTouchMove(e) {
-    handleTouchMove(this.gesture, e)
-  },
-
-  onTouchEnd(e) {
-    if (handleTouchEnd(this.gesture, e)) {
-      router.back()
-    }
-  },
-
-  goBack() {
-    router.back()
   }
 }
 </script>
