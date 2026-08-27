@@ -1,0 +1,335 @@
+<import name="input-method" src="../../components/InputMethod/InputMethod.ux"></import>
+
+<template>
+  <div class="page">
+    <!-- 顶部标题 -->
+    <div class="header">
+      <text class="title">添加考试</text>
+    </div>
+
+    <!-- 可滚动内容区域 -->
+    <scroll class="form-scroll" scroll-y="true" bounces="true">
+      <div class="content">
+        <!-- 考试课程 -->
+        <div class="form-group">
+          <text class="label">考试课程</text>
+          <picker class="picker" type="text" range="{{ courseRange }}" selected="{{ selectedCourseIndex }}" onchange="onCourseChange">
+          </picker>
+        </div>
+
+        <!-- 考试日期 -->
+        <div class="form-group">
+          <text class="label">考试日期</text>
+          <picker class="picker" type="text" range="{{ dateDisplayRange }}" selected="{{ selectedDateIndex }}" onchange="onDateChange">
+          </picker>
+        </div>
+
+        <!-- 开始时间 -->
+        <div class="form-group">
+          <text class="label">开始时间</text>
+          <picker class="picker" type="time" selected="{{ startTime }}" onchange="onStartTimeChange">
+          </picker>
+        </div>
+
+        <!-- 结束时间 -->
+        <div class="form-group">
+          <text class="label">结束时间</text>
+          <picker class="picker" type="time" selected="{{ endTime }}" onchange="onEndTimeChange">
+          </picker>
+        </div>
+
+        <!-- 考场 -->
+        <div class="form-group">
+          <text class="label">考场</text>
+          <div class="input-wrapper" @click="showKeyboard('classroom')">
+            <text if="{{ !classroom }}" class="placeholder-text">请输入考场</text>
+            <text class="input-text">{{ classroom }}</text>
+          </div>
+        </div>
+
+        <!-- 保存按钮 -->
+        <div class="btn-save" @click="saveExam">
+          <text class="btn-text">保存</text>
+        </div>
+
+        <div class="bottom-safe-space"></div>
+      </div>
+    </scroll>
+
+    <!-- 输入法组件 -->
+    <input-method
+      hide="{{ keyboardHidden }}"
+      screentype="circle"
+      keyboardtype="QWERTY"
+      maxlength="5"
+      @complete="onComplete"
+      @delete="onDelete"
+    ></input-method>
+  </div>
+</template>
+
+<style>
+.page {
+  flex-direction: column;
+  align-items: center;
+  background-color: #000000;
+  width: 466px;
+  height: 466px;
+  padding-top: 35px;
+}
+
+.header {
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.form-scroll {
+  width: 400px;
+  height: 385px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.content {
+  width: 380px;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.form-group {
+  width: 100%;
+  flex-direction: column;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.label {
+  font-size: 15px;
+  color: #B0B0B0;
+  margin-bottom: 6px;
+  margin-left: 5px;
+}
+
+.picker {
+  width: 100%;
+  height: 52px;
+  background-color: #1A1A1A;
+  border-radius: 14px;
+  color: #FFFFFF;
+  font-size: 17px;
+}
+
+.input-wrapper {
+  width: 100%;
+  height: 52px;
+  background-color: #1A1A1A;
+  border-radius: 14px;
+  flex-direction: row;
+  align-items: center;
+  padding: 0 18px;
+}
+
+.placeholder-text {
+  font-size: 16px;
+  color: #666666;
+}
+
+.input-text {
+  font-size: 17px;
+  color: #FFFFFF;
+}
+
+.btn-save {
+  width: 380px;
+  height: 50px;
+  border-radius: 25px;
+  background-color: #FF6B6B;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.btn-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.bottom-safe-space {
+  height: 80px;
+  flex-shrink: 0;
+}
+</style>
+
+<script>
+import router from '@system.router'
+import prompt from '@system.prompt'
+import { getCourses, addExam, ensureStorageReady } from '../../common/storage'
+import { getNow, getWeekday } from '../../common/time'
+
+export default {
+  private: {
+    courseRange: [],
+    courseIds: [],
+    selectedCourseIndex: 0,
+    dateDisplayRange: [],
+    dateValueRange: [],
+    selectedDateIndex: 1,  // 默认选择明天
+    startTime: '09:00',
+    endTime: '11:00',
+    classroom: '',
+    keyboardHidden: true,
+    currentInputField: ''
+  },
+
+  onInit() {
+    ensureStorageReady().then(() => {
+      this.initCourseRange()
+      this.initDateRange()
+    })
+  },
+
+  showError(message) {
+    prompt.showToast({
+      message: message,
+      duration: 2000
+    })
+  },
+
+  initCourseRange() {
+    const courses = getCourses()
+    this.courseRange = courses.map(c => c.name)
+    this.courseIds = courses.map(c => c.id)
+  },
+
+  initDateRange() {
+    const now = getNow()
+    const displayRange = []
+    const valueRange = []
+
+    for (let i = 0; i < 180; i++) {
+      const date = new Date(now)
+      date.setDate(date.getDate() + i)
+      const month = date.getMonth() + 1
+      const day = date.getDate()
+      const weekday = getWeekday(date)
+      displayRange.push(`${month}月${day}日 ${weekday}`)
+
+      const year = date.getFullYear()
+      const monthStr = String(month).padStart(2, '0')
+      const dayStr = String(day).padStart(2, '0')
+      valueRange.push(`${year}-${monthStr}-${dayStr}`)
+    }
+
+    this.dateDisplayRange = displayRange
+    this.dateValueRange = valueRange
+  },
+
+  showKeyboard(field) {
+    this.currentInputField = field
+    this.keyboardHidden = false
+  },
+
+  onComplete(evt) {
+    const content = evt.detail.content
+    if (this.currentInputField === 'classroom') {
+      this.classroom += content
+    }
+  },
+
+  onDelete() {
+    if (this.currentInputField === 'classroom' && this.classroom.length > 0) {
+      this.classroom = this.classroom.slice(0, -1)
+    }
+  },
+
+  onCourseChange(e) {
+    this.selectedCourseIndex = e.newSelected
+  },
+
+  onDateChange(e) {
+    this.selectedDateIndex = e.newSelected
+  },
+
+  onStartTimeChange(e) {
+    const hour = String(e.hour).padStart(2, '0')
+    const minute = String(e.minute).padStart(2, '0')
+    this.startTime = `${hour}:${minute}`
+  },
+
+  onEndTimeChange(e) {
+    const hour = String(e.hour).padStart(2, '0')
+    const minute = String(e.minute).padStart(2, '0')
+    this.endTime = `${hour}:${minute}`
+  },
+
+  saveExam() {
+    if (!this.courseIds[this.selectedCourseIndex]) {
+      this.showError('请选择考试课程')
+      return
+    }
+
+    if (!this.startTime || !this.endTime) {
+      this.showError('请选择考试时间')
+      return
+    }
+
+    if (this.startTime >= this.endTime) {
+      this.showError('结束时间必须晚于开始时间')
+      return
+    }
+
+    if (!this.classroom) {
+      this.showError('请输入考场')
+      return
+    }
+
+    // 校验考试开始时间必须晚于当前时间
+    const examDateStr = this.dateValueRange[this.selectedDateIndex]
+    const examStartDateTime = new Date(`${examDateStr}T${this.startTime}:00`)
+    const now = getNow()
+
+    if (examStartDateTime <= now) {
+      this.showError('考试时间不能早于当前时间')
+      return
+    }
+
+    this.keyboardHidden = true
+
+    const examData = {
+      course: this.courseRange[this.selectedCourseIndex],
+      date: examDateStr,
+      startTime: this.startTime,
+      endTime: this.endTime,
+      classroom: this.classroom
+    }
+
+    addExam(examData)
+      .then(() => {
+        console.log('考试添加成功')
+        router.back()
+      })
+      .catch((err) => {
+        console.error('添加考试失败:', err)
+        this.showError('添加考试失败')
+      })
+  },
+
+  onBackPress() {
+    if (!this.keyboardHidden) {
+      this.keyboardHidden = true
+      return true
+    }
+    return false
+  }
+}
+</script>

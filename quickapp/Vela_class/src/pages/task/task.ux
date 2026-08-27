@@ -5,6 +5,14 @@
       <text class="title">待办</text>
     </div>
 
+    <!-- 操作栏 -->
+    <div class="action-row">
+      <text class="action-text">待处理 · {{ pendingCount }}项</text>
+      <div class="add-btn" onclick="goToAddTask">
+        <text class="add-text">+</text>
+      </div>
+    </div>
+
     <!-- 可滚动区域 -->
     <scroll class="task-scroll" scroll-y="true" bounces="true">
 
@@ -113,7 +121,7 @@
 }
 
 .header {
-  margin-bottom: 15px;
+  margin-bottom: 8px;
 }
 
 .title {
@@ -122,9 +130,38 @@
   color: #FFFFFF;
 }
 
+.action-row {
+  width: 260px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.action-text {
+  font-size: 15px;
+  color: #8F8F8F;
+}
+
+.add-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  background-color: #B57BFF;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-text {
+  font-size: 24px;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
 .task-scroll {
   width: 400px;
-  height: 375px;
+  height: 320px;
   flex-direction: column;
   align-items: center;
 }
@@ -252,6 +289,7 @@ export default {
     weekTasks: [],
     futureTasks: [],
     finishedTasks: [],
+    pendingCount: 0,
     isUpdating: false
   },
 
@@ -319,6 +357,9 @@ export default {
       ...t,
       deadlineText: this.formatDeadline(t.deadline)
     }))
+
+    // 计算待处理总数
+    this.pendingCount = this.overdueTasks.length + this.todayTasks.length + this.weekTasks.length + this.futureTasks.length
   },
 
   formatDeadline(deadline) {
@@ -373,6 +414,12 @@ export default {
       params: {
         taskId: taskId
       }
+    })
+  },
+
+  goToAddTask() {
+    router.push({
+      uri: '/pages/task-add'
     })
   }
 }

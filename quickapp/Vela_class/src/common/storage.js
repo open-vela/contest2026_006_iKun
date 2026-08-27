@@ -340,6 +340,267 @@ export function addCourse(courseData) {
 }
 
 /**
+ * 判断是否为用户手动添加的课程（非默认 Mock 课程）
+ * @param {string} courseId
+ * @returns {boolean}
+ */
+export function isUserCreatedCourse(courseId) {
+  // 默认课程 ID 存在于 data.js 的 courses 中
+  const isDefaultCourse = courses.some(c => c.id === courseId)
+  if (isDefaultCourse) {
+    return false
+  }
+  // 检查是否存在于 courseCache 中
+  return courseCache.some(c => c.id === courseId)
+}
+
+/**
+ * 删除用户手动添加的课程
+ * @param {string} courseId
+ * @returns {Promise<boolean>}
+ */
+export function deleteCourse(courseId) {
+  return new Promise((resolve, reject) => {
+    // 检查课程是否存在
+    const courseIndex = courseCache.findIndex(c => c.id === courseId)
+    if (courseIndex === -1) {
+      reject(new Error('Course not found'))
+      return
+    }
+
+    // 检查是否为默认课程
+    const isDefaultCourse = courses.some(c => c.id === courseId)
+    if (isDefaultCourse) {
+      reject(new Error('Cannot delete default course'))
+      return
+    }
+
+    // 保存旧缓存用于回滚
+    const oldCourseCache = courseCache
+
+    // 不可变更新：过滤掉指定课程
+    courseCache = courseCache.filter(c => c.id !== courseId)
+
+    // 持久化到 storage
+    storage.set({
+      key: STORAGE_KEYS.COURSES,
+      value: JSON.stringify(courseCache),
+      success: function () {
+        console.log('Course deleted and saved:', courseId)
+        resolve(true)
+      },
+      fail: function (data, code) {
+        console.error('Failed to delete course:', code)
+        // 回滚到旧缓存
+        courseCache = oldCourseCache
+        reject(new Error('Failed to delete course'))
+      }
+    })
+  })
+}
+
+/**
+ * 添加新考试并持久化
+ * @param {object} examData 考试数据（不含id）
+ * @returns {Promise<object>} 新考试对象
+ */
+export function addExam(examData) {
+  return new Promise((resolve, reject) => {
+    // 生成唯一ID
+    const newId = 'exam_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+
+    // 创建新考试对象
+    const newExam = {
+      id: newId,
+      ...examData
+    }
+
+    // 保存旧缓存用于回滚
+    const oldExamCache = examCache
+
+    // 不可变更新：创建新数组
+    examCache = [...examCache, newExam]
+
+    // 持久化到 storage
+    storage.set({
+      key: STORAGE_KEYS.EXAMS,
+      value: JSON.stringify(examCache),
+      success: function () {
+        console.log('Exam added and saved:', newId)
+        resolve(newExam)
+      },
+      fail: function (data, code) {
+        console.error('Failed to save exam:', code)
+        // 回滚到旧缓存
+        examCache = oldExamCache
+        reject(new Error('Failed to save exam'))
+      }
+    })
+  })
+}
+
+/**
+ * 判断是否为用户手动添加的考试（非默认 Mock 考试）
+ * @param {string} examId
+ * @returns {boolean}
+ */
+export function isUserCreatedExam(examId) {
+  // 默认考试 ID 存在于 data.js 的 exams 中
+  const isDefaultExam = exams.some(e => e.id === examId)
+  if (isDefaultExam) {
+    return false
+  }
+  // 检查是否存在于 examCache 中
+  return examCache.some(e => e.id === examId)
+}
+
+/**
+ * 删除用户手动添加的考试
+ * @param {string} examId
+ * @returns {Promise<boolean>}
+ */
+export function deleteExam(examId) {
+  return new Promise((resolve, reject) => {
+    // 检查考试是否存在
+    const examIndex = examCache.findIndex(e => e.id === examId)
+    if (examIndex === -1) {
+      reject(new Error('Exam not found'))
+      return
+    }
+
+    // 检查是否为默认考试
+    const isDefaultExam = exams.some(e => e.id === examId)
+    if (isDefaultExam) {
+      reject(new Error('Cannot delete default exam'))
+      return
+    }
+
+    // 保存旧缓存用于回滚
+    const oldExamCache = examCache
+
+    // 不可变更新：过滤掉指定考试
+    examCache = examCache.filter(e => e.id !== examId)
+
+    // 持久化到 storage
+    storage.set({
+      key: STORAGE_KEYS.EXAMS,
+      value: JSON.stringify(examCache),
+      success: function () {
+        console.log('Exam deleted and saved:', examId)
+        resolve(true)
+      },
+      fail: function (data, code) {
+        console.error('Failed to delete exam:', code)
+        // 回滚到旧缓存
+        examCache = oldExamCache
+        reject(new Error('Failed to delete exam'))
+      }
+    })
+  })
+}
+
+/**
+ * 添加新待办并持久化
+ * @param {object} taskData 待办数据（不含id和finished）
+ * @returns {Promise<object>} 新待办对象
+ */
+export function addTask(taskData) {
+  return new Promise((resolve, reject) => {
+    // 生成唯一ID
+    const newId = 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+
+    // 创建新待办对象
+    const newTask = {
+      id: newId,
+      ...taskData,
+      finished: false
+    }
+
+    // 保存旧缓存用于回滚
+    const oldTaskCache = taskCache
+
+    // 不可变更新：创建新数组
+    taskCache = [...taskCache, newTask]
+
+    // 持久化到 storage
+    storage.set({
+      key: STORAGE_KEYS.TASKS,
+      value: JSON.stringify(taskCache),
+      success: function () {
+        console.log('Task added and saved:', newId)
+        resolve(newTask)
+      },
+      fail: function (data, code) {
+        console.error('Failed to save task:', code)
+        // 回滚到旧缓存
+        taskCache = oldTaskCache
+        reject(new Error('Failed to save task'))
+      }
+    })
+  })
+}
+
+/**
+ * 判断是否为用户手动添加的待办（非默认 Mock 待办）
+ * @param {string} taskId
+ * @returns {boolean}
+ */
+export function isUserCreatedTask(taskId) {
+  // 默认待办 ID 存在于 data.js 的 tasks 中
+  const isDefaultTask = tasks.some(t => t.id === taskId)
+  if (isDefaultTask) {
+    return false
+  }
+  // 检查是否存在于 taskCache 中
+  return taskCache.some(t => t.id === taskId)
+}
+
+/**
+ * 删除用户手动添加的待办
+ * @param {string} taskId
+ * @returns {Promise<boolean>}
+ */
+export function deleteTask(taskId) {
+  return new Promise((resolve, reject) => {
+    // 检查待办是否存在
+    const taskIndex = taskCache.findIndex(t => t.id === taskId)
+    if (taskIndex === -1) {
+      reject(new Error('Task not found'))
+      return
+    }
+
+    // 检查是否为默认待办
+    const isDefaultTask = tasks.some(t => t.id === taskId)
+    if (isDefaultTask) {
+      reject(new Error('Cannot delete default task'))
+      return
+    }
+
+    // 保存旧缓存用于回滚
+    const oldTaskCache = taskCache
+
+    // 不可变更新：过滤掉指定待办
+    taskCache = taskCache.filter(t => t.id !== taskId)
+
+    // 持久化到 storage
+    storage.set({
+      key: STORAGE_KEYS.TASKS,
+      value: JSON.stringify(taskCache),
+      success: function () {
+        console.log('Task deleted and saved:', taskId)
+        resolve(true)
+      },
+      fail: function (data, code) {
+        console.error('Failed to delete task:', code)
+        // 回滚到旧缓存
+        taskCache = oldTaskCache
+        reject(new Error('Failed to delete task'))
+      }
+    })
+  })
+}
+
+/**
  * 重置为 Mock 数据（调试用）
  * @returns {Promise}
  */

@@ -20,6 +20,9 @@
     },
     {
       "name": "system.device"
+    },
+    {
+      "name": "system.prompt"
     }
   ],
   "config": {
@@ -49,6 +52,15 @@
       },
       "pages/course-add": {
         "component": "course-add"
+      },
+      "pages/exam-add": {
+        "component": "exam-add"
+      },
+      "pages/exam-detail": {
+        "component": "exam-detail"
+      },
+      "pages/task-add": {
+        "component": "task-add"
       }
     }
   }

@@ -24,9 +24,7 @@
         <text class="time-info status-green">剩余 {{ remainingMinutes }} 分钟</text>
         <text class="location-info">{{ currentCourse.classroom }} · {{ currentCourse.teacher }}</text>
         <div class="progress-container">
-          <div class="progress-bar">
-            <div class="progress-fill" style="width: {{ progress }}%"></div>
-          </div>
+          <progress class="progress-bar" percent="{{ progress }}"></progress>
           <text class="progress-text">{{ progressPercent }}%</text>
         </div>
       </div>
@@ -195,15 +193,9 @@
 
 .progress-bar {
   width: 280px;
-  height: 8px;
-  border-radius: 4px;
-  background-color: #2B2B2B;
-}
-
-.progress-fill {
-  height: 8px;
-  border-radius: 4px;
-  background-color: #58D68D;
+  color: #58D68D;
+  layer-color: #2B2B2B;
+  stroke-width: 8px;
 }
 
 .progress-text {

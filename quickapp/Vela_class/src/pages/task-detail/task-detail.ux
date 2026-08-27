@@ -1,48 +1,70 @@
 <template>
   <div class="page">
-    <div if="{{ task }}" class="content">
-      <!-- 状态图标 -->
-      <div class="status-icon {{ task.finished ? 'icon-done' : 'icon-pending' }}">
-        <text class="icon-text">{{ task.finished ? '●' : '○' }}</text>
+    <scroll class="detail-scroll" scroll-y="true" bounces="true">
+      <div if="{{ task }}" class="content">
+        <!-- 状态图标 -->
+        <div class="status-icon {{ task.finished ? 'icon-done' : 'icon-pending' }}">
+          <text class="icon-text">{{ task.finished ? '●' : '○' }}</text>
+        </div>
+
+        <!-- 任务名称 -->
+        <text class="task-name {{ task.finished ? 'text-gray' : '' }}">{{ task.title }}</text>
+
+        <!-- 课程信息 -->
+        <div class="info-row">
+          <text class="info-label">课程</text>
+          <text class="info-value">{{ task.course }}</text>
+        </div>
+
+        <!-- 类型信息 -->
+        <div class="info-row">
+          <text class="info-label">类型</text>
+          <text class="info-value">{{ taskType }}</text>
+        </div>
+
+        <!-- 截止时间 -->
+        <div class="info-row">
+          <text class="info-label">截止</text>
+          <text class="info-value">{{ deadlineText }}</text>
+        </div>
+
+        <!-- 倒计时 -->
+        <div if="{{ !task.finished }}" class="countdown-section">
+          <text class="countdown-text {{ countdown.isUrgent ? 'text-orange' : (countdown.isCritical ? 'text-red' : 'text-purple') }}">
+            {{ countdownText }}
+          </text>
+        </div>
+
+        <!-- 完成按钮 -->
+        <div class="action-btn {{ task.finished ? 'btn-undo' : 'btn-done' }}" onclick="toggleStatus">
+          <text class="btn-text">{{ task.finished ? '取消完成' : '标记完成' }}</text>
+        </div>
+
+        <!-- 删除区域（仅用户添加的待办显示） -->
+        <div if="{{ canDelete }}" class="delete-section">
+          <div if="{{ !deleteConfirming }}" class="delete-btn" onclick="onDeleteClick">
+            <text class="delete-btn-text">删除待办</text>
+          </div>
+          <div if="{{ deleteConfirming }}" class="delete-confirm">
+            <text class="delete-confirm-text">确定删除这个待办？</text>
+            <div class="delete-btns">
+              <div class="cancel-btn" onclick="onCancelDelete">
+                <text class="cancel-btn-text">取消</text>
+              </div>
+              <div class="confirm-btn" onclick="onConfirmDelete">
+                <text class="confirm-btn-text">确认删除</text>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- 任务名称 -->
-      <text class="task-name {{ task.finished ? 'text-gray' : '' }}">{{ task.title }}</text>
-
-      <!-- 课程信息 -->
-      <div class="info-row">
-        <text class="info-label">课程</text>
-        <text class="info-value">{{ task.course }}</text>
+      <div if="{{ !task }}" class="empty">
+        <text class="empty-text">任务不存在</text>
       </div>
 
-      <!-- 类型信息 -->
-      <div class="info-row">
-        <text class="info-label">类型</text>
-        <text class="info-value">{{ taskType }}</text>
-      </div>
-
-      <!-- 截止时间 -->
-      <div class="info-row">
-        <text class="info-label">截止</text>
-        <text class="info-value">{{ deadlineText }}</text>
-      </div>
-
-      <!-- 倒计时 -->
-      <div if="{{ !task.finished }}" class="countdown-section">
-        <text class="countdown-text {{ countdown.isUrgent ? 'text-orange' : (countdown.isCritical ? 'text-red' : 'text-purple') }}">
-          {{ countdownText }}
-        </text>
-      </div>
-
-      <!-- 完成按钮 -->
-      <div class="action-btn {{ task.finished ? 'btn-undo' : 'btn-done' }}" onclick="toggleStatus">
-        <text class="btn-text">{{ task.finished ? '取消完成' : '标记完成' }}</text>
-      </div>
-    </div>
-
-    <div if="{{ !task }}" class="empty">
-      <text class="empty-text">任务不存在</text>
-    </div>
+      <div class="bottom-safe-space"></div>
+    </scroll>
   </div>
 </template>
 
@@ -56,10 +78,18 @@
   padding-top: 45px;
 }
 
+.detail-scroll {
+  width: 400px;
+  height: 380px;
+  flex-direction: column;
+  align-items: center;
+}
+
 .content {
   width: 380px;
   flex-direction: column;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .status-icon {
@@ -179,10 +209,89 @@
   font-size: 20px;
   color: #666666;
 }
+
+.bottom-safe-space {
+  height: 80px;
+  flex-shrink: 0;
+}
+
+.delete-section {
+  width: 380px;
+  margin-top: 25px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.delete-btn {
+  width: 380px;
+  height: 50px;
+  border-radius: 25px;
+  background-color: #FF6B6B;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-btn-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.delete-confirm {
+  width: 380px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.delete-confirm-text {
+  font-size: 16px;
+  color: #FF6B6B;
+  margin-bottom: 15px;
+}
+
+.delete-btns {
+  flex-direction: row;
+  justify-content: space-between;
+  width: 380px;
+}
+
+.cancel-btn {
+  width: 175px;
+  height: 50px;
+  border-radius: 25px;
+  background-color: #2B2B2B;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.cancel-btn-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.confirm-btn {
+  width: 175px;
+  height: 50px;
+  border-radius: 25px;
+  background-color: #FF6B6B;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.confirm-btn-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #FFFFFF;
+}
 </style>
 
 <script>
-import { getTasks, updateTaskStatus, ensureStorageReady, refreshTasksFromStorage } from '../../common/storage'
+import router from '@system.router'
+import { getTasks, updateTaskStatus, ensureStorageReady, refreshTasksFromStorage, isUserCreatedTask, deleteTask } from '../../common/storage'
 import { getTaskCountdown, formatTaskCountdown, getTaskTypeText } from '../../common/task'
 import { getNow, parseDateTime } from '../../common/time'
 
@@ -199,7 +308,10 @@ export default {
     deadlineText: '',
     countdown: { value: 0, unit: '', isUrgent: false, isCritical: false },
     countdownText: '',
-    isUpdating: false
+    isUpdating: false,
+    canDelete: false,
+    deleteConfirming: false,
+    deleting: false
   },
 
   onInit() {
@@ -227,6 +339,7 @@ export default {
       this.deadlineText = this.formatDeadline(this.task.deadline)
       this.countdown = getTaskCountdown(this.task, now)
       this.countdownText = formatTaskCountdown(this.task, now)
+      this.canDelete = isUserCreatedTask(this.taskId)
     }
   },
 
@@ -255,6 +368,38 @@ export default {
           this.isUpdating = false
         })
     }
+  },
+
+  onDeleteClick() {
+    this.deleteConfirming = true
+  },
+
+  onCancelDelete() {
+    this.deleteConfirming = false
+  },
+
+  onConfirmDelete() {
+    if (this.deleting) return
+
+    this.deleting = true
+    deleteTask(this.taskId)
+      .then(() => {
+        console.log('Task deleted successfully')
+        router.back()
+      })
+      .catch((err) => {
+        console.error('Failed to delete task:', err)
+        this.deleting = false
+        this.deleteConfirming = false
+      })
+  },
+
+  onBackPress() {
+    if (this.deleteConfirming) {
+      this.deleteConfirming = false
+      return true
+    }
+    return false
   }
 }
 </script>

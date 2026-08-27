@@ -5,12 +5,20 @@
       <text class="title">考试</text>
     </div>
 
+    <!-- 操作栏 -->
+    <div class="action-row">
+      <text class="action-text">近期考试 · {{ examList.length }}场</text>
+      <div class="add-btn" onclick="goToAddExam">
+        <text class="add-text">+</text>
+      </div>
+    </div>
+
     <!-- 可滚动区域 -->
     <scroll class="exam-scroll" scroll-y="true" bounces="true">
 
       <!-- 考试列表 -->
       <div if="{{ examList.length > 0 }}" class="exam-list">
-        <div for="{{ examList }}" class="exam-item">
+        <div for="{{ examList }}" class="exam-item" onclick="goToDetail($item.id)">
           <div class="exam-main">
             <text class="exam-name">{{ $item.course }}</text>
             <text class="exam-time">{{ $item.dateText }} · {{ $item.startTime }}</text>
@@ -46,7 +54,7 @@
 }
 
 .header {
-  margin-bottom: 20px;
+  margin-bottom: 8px;
 }
 
 .title {
@@ -55,9 +63,38 @@
   color: #FFFFFF;
 }
 
+.action-row {
+  width: 260px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.action-text {
+  font-size: 15px;
+  color: #8F8F8F;
+}
+
+.add-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  background-color: #FF6B6B;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-text {
+  font-size: 24px;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
 .exam-scroll {
   width: 400px;
-  height: 380px;
+  height: 310px;
   flex-direction: column;
   align-items: center;
 }
@@ -147,6 +184,7 @@
 </style>
 
 <script>
+import router from '@system.router'
 import { getUpcomingExams, getExamCountdown, formatExamDate } from '../../common/exam'
 import { getNow } from '../../common/time'
 import { ensureStorageReady, refreshExamsFromStorage } from '../../common/storage'
@@ -192,6 +230,21 @@ export default {
       dateText: formatExamDate(e).split(' · ')[0],
       countdown: getExamCountdown(e, now)
     }))
+  },
+
+  goToAddExam() {
+    router.push({
+      uri: '/pages/exam-add'
+    })
+  },
+
+  goToDetail(examId) {
+    router.push({
+      uri: '/pages/exam-detail',
+      params: {
+        examId: examId
+      }
+    })
   }
 }
 </script>

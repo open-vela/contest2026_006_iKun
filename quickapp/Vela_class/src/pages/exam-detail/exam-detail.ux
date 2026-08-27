@@ -1,53 +1,45 @@
 <template>
   <div class="page">
     <scroll class="detail-scroll" scroll-y="true" bounces="true">
-      <div if="{{ course }}" class="content">
+      <div if="{{ exam }}" class="content">
         <!-- 课程名称 -->
-        <text class="course-name">{{ course.name }}</text>
+        <text class="exam-course">{{ exam.course }}</text>
+
+        <!-- 日期信息 -->
+        <div class="info-row">
+          <text class="info-label">日期</text>
+          <text class="info-value">{{ examDateText }}</text>
+        </div>
 
         <!-- 时间信息 -->
         <div class="time-section">
-          <text class="time-value">{{ course.startTime }}</text>
+          <text class="time-value">{{ exam.startTime }}</text>
           <text class="time-arrow">→</text>
-          <text class="time-value">{{ course.endTime }}</text>
+          <text class="time-value">{{ exam.endTime }}</text>
         </div>
 
-        <!-- 地点信息 -->
+        <!-- 考场信息 -->
         <div class="info-row">
-          <text class="info-label">教室</text>
-          <text class="info-value">{{ course.classroom }}</text>
+          <text class="info-label">考场</text>
+          <text class="info-value">{{ exam.classroom }}</text>
         </div>
 
-        <!-- 教师信息 -->
-        <div class="info-row">
-          <text class="info-label">教师</text>
-          <text class="info-value">{{ course.teacher }}</text>
+        <!-- 倒计时 -->
+        <div if="{{ !isFinished }}" class="countdown-section">
+          <text class="countdown-text text-red">{{ countdownText }}</text>
         </div>
 
-        <!-- 状态信息 -->
-        <div if="{{ status === 'ongoing' }}" class="status-section">
-          <text class="status-text text-green">当前剩余 {{ remainingMinutes }} 分钟</text>
-          <div class="progress-container">
-            <progress class="progress-bar" percent="{{ progress }}"></progress>
-            <text class="progress-text">{{ progressPercent }}%</text>
-          </div>
+        <div if="{{ isFinished }}" class="countdown-section">
+          <text class="countdown-text text-gray">已结束</text>
         </div>
 
-        <div if="{{ status === 'upcoming' }}" class="status-section">
-          <text class="status-text text-blue">还有 {{ minutesUntilStart }} 分钟开始</text>
-        </div>
-
-        <div if="{{ status === 'finished' }}" class="status-section">
-          <text class="status-text text-gray">已结束</text>
-        </div>
-
-        <!-- 删除区域（仅用户添加的课程显示） -->
+        <!-- 删除区域（仅用户添加的考试显示） -->
         <div if="{{ canDelete }}" class="delete-section">
           <div if="{{ !deleteConfirming }}" class="delete-btn" onclick="onDeleteClick">
-            <text class="delete-btn-text">删除课程</text>
+            <text class="delete-btn-text">删除考试</text>
           </div>
           <div if="{{ deleteConfirming }}" class="delete-confirm">
-            <text class="delete-confirm-text">确定删除这门课程？</text>
+            <text class="delete-confirm-text">确定删除这场考试？</text>
             <div class="delete-btns">
               <div class="cancel-btn" onclick="onCancelDelete">
                 <text class="cancel-btn-text">取消</text>
@@ -60,8 +52,8 @@
         </div>
       </div>
 
-      <div if="{{ !course }}" class="empty">
-        <text class="empty-text">课程不存在</text>
+      <div if="{{ !exam }}" class="empty">
+        <text class="empty-text">考试不存在</text>
       </div>
 
       <div class="bottom-safe-space"></div>
@@ -93,29 +85,11 @@
   flex-shrink: 0;
 }
 
-.course-name {
+.exam-course {
   font-size: 34px;
   font-weight: 700;
   color: #FFFFFF;
   margin-bottom: 25px;
-}
-
-.time-section {
-  flex-direction: row;
-  align-items: center;
-  margin-bottom: 30px;
-}
-
-.time-value {
-  font-size: 48px;
-  font-weight: 700;
-  color: #FFFFFF;
-}
-
-.time-arrow {
-  font-size: 32px;
-  color: #4FA3FF;
-  margin: 0 20px;
 }
 
 .info-row {
@@ -139,7 +113,25 @@
   flex: 1;
 }
 
-.status-section {
+.time-section {
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.time-value {
+  font-size: 48px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.time-arrow {
+  font-size: 32px;
+  color: #FF6B6B;
+  margin: 0 20px;
+}
+
+.countdown-section {
   width: 380px;
   flex-direction: column;
   align-items: center;
@@ -149,30 +141,17 @@
   border-radius: 22px;
 }
 
-.status-text {
+.countdown-text {
   font-size: 24px;
   font-weight: 700;
-  margin-bottom: 15px;
 }
 
-.progress-container {
-  flex-direction: row;
-  align-items: center;
-  width: 100%;
+.text-red {
+  color: #FF6B6B;
 }
 
-.progress-bar {
-  flex: 1;
-  color: #58D68D;
-  layer-color: #2B2B2B;
-  stroke-width: 10px;
-}
-
-.progress-text {
-  font-size: 20px;
-  font-weight: 700;
-  color: #58D68D;
-  margin-left: 15px;
+.text-gray {
+  color: #666666;
 }
 
 .delete-section {
@@ -253,18 +232,6 @@
   flex-shrink: 0;
 }
 
-.text-blue {
-  color: #4FA3FF;
-}
-
-.text-green {
-  color: #58D68D;
-}
-
-.text-gray {
-  color: #666666;
-}
-
 .empty {
   flex-direction: column;
   align-items: center;
@@ -280,24 +247,20 @@
 
 <script>
 import router from '@system.router'
-import { getCourses, ensureStorageReady, isUserCreatedCourse, deleteCourse } from '../../common/storage'
-import { getCourseStatus, getCourseProgress, getCourseRemainingTime, getMinutesUntilStart } from '../../common/schedule'
-import { getNow } from '../../common/time'
-
-const DEBUG_NOW = null
+import { getExams, ensureStorageReady, refreshExamsFromStorage, isUserCreatedExam, deleteExam } from '../../common/storage'
+import { getExamCountdown, formatExamDate } from '../../common/exam'
+import { getNow, parseDateTime } from '../../common/time'
 
 export default {
   protected: {
-    courseId: ''
+    examId: ''
   },
 
   private: {
-    course: null,
-    status: 'upcoming',
-    progress: 0,
-    progressPercent: 0,
-    remainingMinutes: 0,
-    minutesUntilStart: 0,
+    exam: null,
+    examDateText: '',
+    countdownText: '',
+    isFinished: false,
     canDelete: false,
     deleteConfirming: false,
     deleting: false
@@ -305,31 +268,33 @@ export default {
 
   onInit() {
     ensureStorageReady()
+      .then(() => refreshExamsFromStorage())
       .then(() => {
-        this.loadCourse()
+        this.loadExam()
       })
       .catch((err) => {
         console.error('Failed to initialize storage:', err)
-        this.loadCourse()
+        this.loadExam()
       })
   },
 
-  loadCourse() {
-    const now = getNow(DEBUG_NOW)
+  loadExam() {
+    const now = getNow()
 
-    // 从统一课程缓存中查找课程
-    this.course = getCourses().find(c => c.id === this.courseId)
+    // 从统一缓存中查找考试
+    this.exam = getExams().find(e => e.id === this.examId)
 
-    if (this.course) {
-      this.status = getCourseStatus(this.course, now)
-      this.canDelete = isUserCreatedCourse(this.courseId)
+    if (this.exam) {
+      this.examDateText = formatExamDate(this.exam)
+      this.canDelete = isUserCreatedExam(this.examId)
 
-      if (this.status === 'ongoing') {
-        this.progress = Math.round(getCourseProgress(this.course, now) * 100)
-        this.progressPercent = this.progress
-        this.remainingMinutes = getCourseRemainingTime(this.course, now)
-      } else if (this.status === 'upcoming') {
-        this.minutesUntilStart = getMinutesUntilStart(this.course, now)
+      const countdown = getExamCountdown(this.exam, now)
+      if (countdown.isFinished) {
+        this.isFinished = true
+        this.countdownText = '已结束'
+      } else {
+        this.isFinished = false
+        this.countdownText = `还有 ${countdown.value} ${countdown.unit}`
       }
     }
   },
@@ -346,25 +311,23 @@ export default {
     if (this.deleting) return
 
     this.deleting = true
-    deleteCourse(this.courseId)
+    deleteExam(this.examId)
       .then(() => {
-        console.log('Course deleted successfully')
+        console.log('Exam deleted successfully')
         router.back()
       })
       .catch((err) => {
-        console.error('Failed to delete course:', err)
+        console.error('Failed to delete exam:', err)
         this.deleting = false
         this.deleteConfirming = false
       })
   },
 
   onBackPress() {
-    // 如果正在确认删除，先取消确认状态
     if (this.deleteConfirming) {
       this.deleteConfirming = false
       return true
     }
-    // 否则交给系统默认返回
     return false
   }
 }

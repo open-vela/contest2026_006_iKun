@@ -36,7 +36,6 @@
         <div class="btn-next" @click="nextStep">
           <text class="btn-text">下一步</text>
         </div>
-        <!-- 底部安全空间 -->
         <div class="bottom-safe-space"></div>
       </div>
 
@@ -52,18 +51,16 @@
         </div>
         <div class="form-group">
           <text class="label">开始时间</text>
-          <div class="time-selector">
-            <div class="time-btn" @click="openStartPicker">
-              <text class="time-text">{{ startTime || '选择时间' }}</text>
-            </div>
+          <div class="picker-wrap">
+            <picker class="time-picker" type="time" selected="{{ startTime }}" onchange="onStartTimeChange"></picker>
+            <text class="picker-value">{{ startTime || '08:00' }}</text>
           </div>
         </div>
         <div class="form-group">
           <text class="label">结束时间</text>
-          <div class="time-selector">
-            <div class="time-btn" @click="openEndPicker">
-              <text class="time-text">{{ endTime || '选择时间' }}</text>
-            </div>
+          <div class="picker-wrap">
+            <picker class="time-picker" type="time" selected="{{ endTime }}" onchange="onEndTimeChange"></picker>
+            <text class="picker-value">{{ endTime || '09:00' }}</text>
           </div>
         </div>
         <div class="btn-row">
@@ -74,17 +71,16 @@
             <text class="btn-text">下一步</text>
           </div>
         </div>
-        <!-- 底部安全空间 -->
         <div class="bottom-safe-space"></div>
       </div>
 
       <!-- 步骤3：周次 -->
       <div if="{{ step === 3 }}" class="content">
         <div class="form-group">
-          <text class="label">上课周次</text>
+          <text class="label">上课频率</text>
           <div class="week-type-selector">
             <div class="week-type-btn {{ weekType === 'all' ? 'week-type-active' : '' }}" @click="selectWeekType('all')">
-              <text class="week-type-text">全周</text>
+              <text class="week-type-text">每周</text>
             </div>
             <div class="week-type-btn {{ weekType === 'odd' ? 'week-type-active' : '' }}" @click="selectWeekType('odd')">
               <text class="week-type-text">单周</text>
@@ -92,21 +88,24 @@
             <div class="week-type-btn {{ weekType === 'even' ? 'week-type-active' : '' }}" @click="selectWeekType('even')">
               <text class="week-type-text">双周</text>
             </div>
-            <div class="week-type-btn {{ weekType === 'custom' ? 'week-type-active' : '' }}" @click="selectWeekType('custom')">
-              <text class="week-type-text">自定义</text>
-            </div>
-          </div>
-        </div>
-        <div if="{{ weekType === 'custom' }}" class="form-group">
-          <text class="label">选择周次（点击切换）</text>
-          <div class="weeks-grid">
-            <div for="{{ weekOptions }}" class="week-btn {{ $item.selected ? 'week-selected' : '' }}" @click="toggleWeek($item.value)">
-              <text class="week-num">{{ $item.value }}</text>
-            </div>
           </div>
         </div>
         <div class="form-group">
-          <text class="label">已选周次：{{ weeksText }}</text>
+          <text class="label">开始周</text>
+          <div class="picker-wrap">
+            <picker class="week-picker" type="text" range="{{ weekRange }}" selected="{{ startWeekIndex }}" onchange="onStartWeekChange"></picker>
+            <text class="picker-value">{{ weekRange[startWeekIndex] }}</text>
+          </div>
+        </div>
+        <div class="form-group">
+          <text class="label">结束周</text>
+          <div class="picker-wrap">
+            <picker class="week-picker" type="text" range="{{ weekRange }}" selected="{{ endWeekIndex }}" onchange="onEndWeekChange"></picker>
+            <text class="picker-value">{{ weekRange[endWeekIndex] }}</text>
+          </div>
+        </div>
+        <div class="form-group">
+          <text class="label">已选：{{ weeksText }}</text>
         </div>
         <div class="btn-row">
           <div class="btn-back" @click="prevStep">
@@ -116,27 +115,9 @@
             <text class="btn-text">保存</text>
           </div>
         </div>
-        <!-- 底部安全空间 -->
         <div class="bottom-safe-space"></div>
       </div>
     </scroll>
-
-    <!-- 时间选择器弹窗 -->
-    <div if="{{ showStartPicker || showEndPicker }}" class="picker-mask">
-      <div class="picker-popup">
-        <text class="picker-title">选择时间</text>
-        <scroll class="time-scroll" scroll-y="true">
-          <div class="time-options">
-            <div for="{{ timeOptions }}" class="time-option" onclick="selectTime($item)">
-              <text class="time-option-text">{{ $item }}</text>
-            </div>
-          </div>
-        </scroll>
-        <div class="picker-btn" onclick="closePicker">
-          <text class="picker-btn-text">取消</text>
-        </div>
-      </div>
-    </div>
 
     <!-- 输入法组件 -->
     <input-method
@@ -252,23 +233,34 @@
   color: #FFFFFF;
 }
 
-.time-selector {
+.picker-wrap {
+  width: 100%;
+  height: 52px;
+  background-color: #1A1A1A;
+  border-radius: 14px;
   flex-direction: row;
-}
-
-.time-btn {
-  flex: 1;
-  height: 44px;
-  background-color: #171717;
-  border-radius: 12px;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
 
-.time-text {
-  font-size: 16px;
+.time-picker {
+  width: 100%;
+  height: 52px;
   color: #FFFFFF;
+  font-size: 17px;
+}
+
+.week-picker {
+  width: 100%;
+  height: 52px;
+  color: #FFFFFF;
+  font-size: 17px;
+}
+
+.picker-value {
+  font-size: 17px;
+  color: #FFFFFF;
+  position: absolute;
 }
 
 .week-type-selector {
@@ -278,7 +270,7 @@
 }
 
 .week-type-btn {
-  width: 85px;
+  width: 115px;
   height: 40px;
   border-radius: 10px;
   background-color: #171717;
@@ -293,33 +285,6 @@
 }
 
 .week-type-text {
-  font-size: 14px;
-  color: #FFFFFF;
-}
-
-.weeks-grid {
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-}
-
-.week-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background-color: #171717;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  margin-right: 8px;
-  margin-bottom: 8px;
-}
-
-.week-selected {
-  background-color: #4FA3FF;
-}
-
-.week-num {
   font-size: 14px;
   color: #FFFFFF;
 }
@@ -357,84 +322,16 @@
   color: #FFFFFF;
 }
 
-.picker-mask {
-  position: fixed;
-  left: 0;
-  top: 0;
-  width: 466px;
-  height: 466px;
-  background-color: rgba(0, 0, 0, 0.8);
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.picker-popup {
-  width: 350px;
-  background-color: #171717;
-  border-radius: 20px;
-  padding: 20px;
-  flex-direction: column;
-  align-items: center;
-}
-
-.picker-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #FFFFFF;
-  margin-bottom: 15px;
-}
-
-.time-scroll {
-  width: 100%;
-  height: 200px;
-}
-
-.time-options {
-  width: 100%;
-  flex-direction: column;
-  flex-shrink: 0;
-}
-
-.time-option {
-  width: 100%;
-  height: 44px;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border-bottom-width: 1px;
-  border-bottom-color: #2B2B2B;
-  flex-shrink: 0;
-}
-
-.time-option-text {
-  font-size: 16px;
-  color: #FFFFFF;
-}
-
 .bottom-safe-space {
   width: 100%;
   height: 80px;
   flex-shrink: 0;
 }
-
-.picker-btn {
-  width: 100%;
-  height: 44px;
-  margin-top: 15px;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.picker-btn-text {
-  font-size: 16px;
-  color: #4FA3FF;
-}
 </style>
 
 <script>
 import router from '@system.router'
+import prompt from '@system.prompt'
 import { addCourse, ensureStorageReady } from '../../common/storage'
 
 export default {
@@ -444,13 +341,14 @@ export default {
     teacher: '',
     classroom: '',
     selectedWeekday: 1,
-    startTime: '',
-    endTime: '',
+    startTime: '08:00',
+    endTime: '09:00',
     weekType: 'all',
+    startWeekIndex: 0,
+    endWeekIndex: 15,
+    weekRange: ['第1周', '第2周', '第3周', '第4周', '第5周', '第6周', '第7周', '第8周', '第9周', '第10周', '第11周', '第12周', '第13周', '第14周', '第15周', '第16周'],
     weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
-    weeksText: '1-16周',
-    showStartPicker: false,
-    showEndPicker: false,
+    weeksText: '第1-16周 · 每周',
     keyboardHidden: true,
     currentInputField: '',
     weekdays: [
@@ -461,14 +359,18 @@ export default {
       { label: '五', value: 5 },
       { label: '六', value: 6 },
       { label: '日', value: 7 }
-    ],
-    weekOptions: [],
-    timeOptions: []
+    ]
   },
 
   onInit() {
-    this.initWeekOptions()
-    this.initTimeOptions()
+    this.generateWeeks()
+  },
+
+  showError(message) {
+    prompt.showToast({
+      message: message,
+      duration: 2000
+    })
   },
 
   showKeyboard(field) {
@@ -501,31 +403,16 @@ export default {
     }
   },
 
-  openStartPicker() {
-    this.keyboardHidden = true
-    this.showStartPicker = true
+  onStartTimeChange(e) {
+    const hour = String(e.hour).padStart(2, '0')
+    const minute = String(e.minute).padStart(2, '0')
+    this.startTime = `${hour}:${minute}`
   },
 
-  openEndPicker() {
-    this.keyboardHidden = true
-    this.showEndPicker = true
-  },
-
-  initWeekOptions() {
-    this.weekOptions = []
-    for (let i = 1; i <= 16; i++) {
-      this.weekOptions.push({ value: i, selected: true })
-    }
-  },
-
-  initTimeOptions() {
-    this.timeOptions = []
-    for (let h = 8; h <= 20; h++) {
-      for (let m = 0; m < 60; m += 5) {
-        const time = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0')
-        this.timeOptions.push(time)
-      }
-    }
+  onEndTimeChange(e) {
+    const hour = String(e.hour).padStart(2, '0')
+    const minute = String(e.minute).padStart(2, '0')
+    this.endTime = `${hour}:${minute}`
   },
 
   selectWeekday(day) {
@@ -534,75 +421,77 @@ export default {
 
   selectWeekType(type) {
     this.weekType = type
-    switch (type) {
-      case 'all':
-        this.weeks = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
-        this.weeksText = '1-16周'
-        this.weekOptions.forEach(w => w.selected = true)
-        break
-      case 'odd':
-        this.weeks = [1, 3, 5, 7, 9, 11, 13, 15]
-        this.weeksText = '单周'
-        this.weekOptions.forEach(w => w.selected = w.value % 2 === 1)
-        break
-      case 'even':
-        this.weeks = [2, 4, 6, 8, 10, 12, 14, 16]
-        this.weeksText = '双周'
-        this.weekOptions.forEach(w => w.selected = w.value % 2 === 0)
-        break
-      case 'custom':
-        this.weeks = []
-        this.weekOptions.forEach(w => w.selected = false)
-        this.weeksText = '未选择'
-        break
-    }
+    this.generateWeeks()
   },
 
-  toggleWeek(week) {
-    const opt = this.weekOptions.find(w => w.value === week)
-    if (opt) {
-      opt.selected = !opt.selected
+  onStartWeekChange(e) {
+    this.startWeekIndex = e.newSelected
+    // 确保结束周不早于开始周
+    if (this.endWeekIndex < this.startWeekIndex) {
+      this.endWeekIndex = this.startWeekIndex
     }
-    this.weeks = this.weekOptions.filter(w => w.selected).map(w => w.value)
-    if (this.weeks.length === 0) {
-      this.weeksText = '未选择'
-    } else if (this.weeks.length === 16) {
-      this.weeksText = '1-16周'
+    this.generateWeeks()
+  },
+
+  onEndWeekChange(e) {
+    this.endWeekIndex = e.newSelected
+    // 确保结束周不早于开始周
+    if (this.endWeekIndex < this.startWeekIndex) {
+      this.startWeekIndex = this.endWeekIndex
+    }
+    this.generateWeeks()
+  },
+
+  generateWeeks() {
+    const startWeek = this.startWeekIndex + 1
+    const endWeek = this.endWeekIndex + 1
+
+    // 校验
+    if (endWeek < startWeek) {
+      this.weeks = []
+      this.weeksText = '结束周不能早于开始周'
+      return
+    }
+
+    const weeks = []
+    for (let i = startWeek; i <= endWeek; i++) {
+      if (this.weekType === 'all') {
+        weeks.push(i)
+      } else if (this.weekType === 'odd' && i % 2 === 1) {
+        weeks.push(i)
+      } else if (this.weekType === 'even' && i % 2 === 0) {
+        weeks.push(i)
+      }
+    }
+
+    this.weeks = weeks
+
+    // 生成文字描述
+    const typeText = this.weekType === 'all' ? '每周' : (this.weekType === 'odd' ? '单周' : '双周')
+    if (weeks.length === 0) {
+      this.weeksText = '无课程'
+    } else if (weeks.length === 1) {
+      this.weeksText = `第${weeks[0]}周 · ${typeText}`
     } else {
-      this.weeksText = this.weeks.join(',') + '周'
+      this.weeksText = `第${startWeek}-${endWeek}周 · ${typeText}`
     }
-  },
-
-  selectTime(time) {
-    if (this.showStartPicker) {
-      this.startTime = time
-      this.showStartPicker = false
-    } else {
-      this.endTime = time
-      this.showEndPicker = false
-    }
-  },
-
-  closePicker() {
-    this.showStartPicker = false
-    this.showEndPicker = false
   },
 
   nextStep() {
     if (this.step === 1) {
       if (!this.name) {
-        console.warn('请输入课程名称')
+        this.showError('请输入课程名称')
         return
       }
       this.keyboardHidden = true
     }
     if (this.step === 2) {
       if (!this.startTime || !this.endTime) {
-        console.warn('请选择时间')
+        this.showError('请选择上课时间')
         return
       }
       if (this.startTime >= this.endTime) {
-        console.warn('结束时间必须晚于开始时间')
+        this.showError('结束时间必须晚于开始时间')
         return
       }
     }
@@ -619,7 +508,7 @@ export default {
 
   saveCourse() {
     if (this.weeks.length === 0) {
-      console.warn('请选择上课周次')
+      this.showError('请选择有效的上课周次')
       return
     }
 
@@ -643,16 +532,15 @@ export default {
       })
       .catch((err) => {
         console.error('添加课程失败:', err)
+        this.showError('添加课程失败')
       })
   },
 
   onBackPress() {
-    // 如果输入法正在显示，先关闭输入法
     if (!this.keyboardHidden) {
       this.keyboardHidden = true
-      return true // 拦截返回事件，不退出页面
+      return true
     }
-    // 输入法已隐藏，不拦截，让系统执行默认返回
     return false
   }
 }
