@@ -1,0 +1,132 @@
+<template>
+  <div class="page">
+    <!-- 顶部标题 -->
+    <div class="header">
+      <text class="title">开发工具</text>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="content">
+      <text class="desc">此页面用于开发调试，可重置测试数据。</text>
+
+      <!-- 重置按钮 -->
+      <div class="btn-reset" onclick="resetData">
+        <text class="btn-text">重置测试数据</text>
+      </div>
+
+      <!-- 提示信息 -->
+      <text if="{{ message }}" class="message">{{ message }}</text>
+
+      <div class="info-section">
+        <text class="info-title">说明</text>
+        <text class="info-text">点击重置后，课程、考试、待办数据将恢复为默认测试数据。</text>
+        <text class="info-text">用户手动添加的数据将被清除。</text>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style>
+.page {
+  flex-direction: column;
+  align-items: center;
+  background-color: #000000;
+  width: 466px;
+  height: 466px;
+  padding-top: 45px;
+}
+
+.header {
+  margin-bottom: 25px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.content {
+  width: 380px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.desc {
+  font-size: 15px;
+  color: #8F8F8F;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+.btn-reset {
+  width: 380px;
+  height: 50px;
+  border-radius: 25px;
+  background-color: #FF6B6B;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.btn-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.message {
+  font-size: 15px;
+  color: #58D68D;
+  margin-bottom: 20px;
+}
+
+.info-section {
+  width: 380px;
+  flex-direction: column;
+  padding: 15px;
+  background-color: #171717;
+  border-radius: 16px;
+  margin-top: 10px;
+}
+
+.info-title {
+  font-size: 14px;
+  color: #8F8F8F;
+  margin-bottom: 8px;
+}
+
+.info-text {
+  font-size: 13px;
+  color: #666666;
+  margin-bottom: 4px;
+}
+</style>
+
+<script>
+import router from '@system.router'
+import { resetToMockData } from '../../common/storage'
+
+export default {
+  private: {
+    message: ''
+  },
+
+  resetData() {
+    resetToMockData()
+      .then(() => {
+        this.message = '测试数据已重置'
+        console.log('Mock data reset successfully')
+      })
+      .catch((err) => {
+        this.message = '重置失败'
+        console.error('Failed to reset mock data:', err)
+      })
+  },
+
+  goBack() {
+    router.back()
+  }
+}
+</script>

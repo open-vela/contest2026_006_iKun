@@ -68,6 +68,11 @@
         <text class="summary-count status-purple">{{ taskSummary.totalCount }} 项</text>
       </div>
     </div>
+
+    <!-- 底部应用标识（隐藏 Debug 入口） -->
+    <div class="app-brand" @click="onBrandClick">
+      <text class="brand-text">VELA CLASS</text>
+    </div>
   </div>
 </template>
 
@@ -268,6 +273,16 @@
   font-weight: 700;
   margin-bottom: 2px;
 }
+
+.app-brand {
+  margin-top: 12px;
+  padding: 5px;
+}
+
+.brand-text {
+  font-size: 12px;
+  color: #333333;
+}
 </style>
 
 <script>
@@ -276,7 +291,7 @@ import { getCurrentCourse, getNextCourse, getNextCourseAcrossDays, getCourseProg
 import { getNearestExam, getExamCountdown, getExamSummary } from '../../common/exam'
 import { getTaskSummary } from '../../common/task'
 import { getNow, formatTime, formatFullDate } from '../../common/time'
-import { ensureStorageReady, refreshTasksFromStorage } from '../../common/storage'
+import { ensureStorageReady, refreshTasksFromStorage, refreshExamsFromStorage, refreshCoursesFromStorage } from '../../common/storage'
 
 // 调试模式：设置为 null 使用真实时间，设置为 Date 对象使用模拟时间
 const DEBUG_NOW = null
@@ -305,7 +320,9 @@ export default {
     examSummary: { count: 0, nearestCourse: null },
     taskSummary: { todayCount: 0, totalCount: 0, urgentCount: 0 },
     todayCourseCount: 0,
-    timer: null
+    timer: null,
+    debugClickCount: 0,
+    debugClickTimer: null
   },
 
   onInit() {
@@ -339,7 +356,11 @@ export default {
 
   onShow() {
     ensureStorageReady()
-      .then(() => refreshTasksFromStorage())
+      .then(() => Promise.all([
+        refreshCoursesFromStorage(),
+        refreshExamsFromStorage(),
+        refreshTasksFromStorage()
+      ]))
       .then(() => {
         this.updateTime()
         this.updateStatus()
@@ -463,6 +484,29 @@ export default {
     router.push({
       uri: '/pages/schedule'
     })
+  },
+
+  onBrandClick() {
+    this.debugClickCount++
+
+    // 清除之前的定时器
+    if (this.debugClickTimer) {
+      clearTimeout(this.debugClickTimer)
+    }
+
+    // 检查是否达到5次
+    if (this.debugClickCount >= 5) {
+      this.debugClickCount = 0
+      router.push({
+        uri: '/pages/debug'
+      })
+      return
+    }
+
+    // 2秒内没有继续点击则重置计数
+    this.debugClickTimer = setTimeout(() => {
+      this.debugClickCount = 0
+    }, 2000)
   }
 }
 </script>

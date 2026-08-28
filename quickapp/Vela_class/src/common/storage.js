@@ -602,43 +602,57 @@ export function deleteTask(taskId) {
 
 /**
  * 重置为 Mock 数据（调试用）
+ * 同时更新内存缓存和 Storage
  * @returns {Promise}
  */
 export function resetToMockData() {
-  return new Promise((resolve) => {
-    courseCache = [...courses]
-    examCache = [...exams]
-    taskCache = [...tasks]
+  return new Promise((resolve, reject) => {
+    // 1. 从 data.js 加载默认数据并深拷贝
+    const defaultCourses = courses.map(c => ({ ...c }))
+    const defaultExams = exams.map(e => ({ ...e }))
+    const defaultTasks = tasks.map(t => ({ ...t }))
+
+    // 2. 更新内存缓存
+    courseCache = defaultCourses
+    examCache = defaultExams
+    taskCache = defaultTasks
 
     let saved = 0
+    let hasError = false
     const total = 3
 
-    const checkComplete = () => {
+    const checkComplete = (success) => {
+      if (!success) hasError = true
       saved++
       if (saved >= total) {
-        resolve()
+        if (hasError) {
+          reject(new Error('Failed to save some data'))
+        } else {
+          resolve()
+        }
       }
     }
 
+    // 3. 保存到 Storage
     storage.set({
       key: STORAGE_KEYS.COURSES,
       value: JSON.stringify(courseCache),
-      success: checkComplete,
-      fail: checkComplete
+      success: () => checkComplete(true),
+      fail: () => checkComplete(false)
     })
 
     storage.set({
       key: STORAGE_KEYS.EXAMS,
       value: JSON.stringify(examCache),
-      success: checkComplete,
-      fail: checkComplete
+      success: () => checkComplete(true),
+      fail: () => checkComplete(false)
     })
 
     storage.set({
       key: STORAGE_KEYS.TASKS,
       value: JSON.stringify(taskCache),
-      success: checkComplete,
-      fail: checkComplete
+      success: () => checkComplete(true),
+      fail: () => checkComplete(false)
     })
   })
 }
