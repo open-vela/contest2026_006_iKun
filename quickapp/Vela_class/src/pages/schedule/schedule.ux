@@ -36,7 +36,7 @@
           </div>
           <div class="timeline-dot {{ $item.status === 'finished' ? 'dot-gray' : ($item.status === 'ongoing' ? 'dot-green' : 'dot-blue') }}"></div>
           <div class="timeline-line {{ $item.status === 'finished' ? 'line-gray' : '' }}"></div>
-          <div class="timeline-card {{ $item.status === 'ongoing' ? 'card-green' : '' }}" onclick="goToDetail($item.id)">
+          <div class="timeline-card {{ $item.status === 'ongoing' ? 'card-green' : '' }}" onclick="goToDetail($item.id, 'today')">
             <text class="card-name {{ $item.status === 'finished' ? 'text-gray' : '' }}">{{ $item.name }}</text>
             <text class="card-location {{ $item.status === 'finished' ? 'text-gray' : '' }}">{{ $item.classroom }} · {{ $item.teacher }}</text>
             <text if="{{ $item.status === 'ongoing' }}" class="card-status text-green">正在进行 · 剩余{{ $item.remainingMin }}分钟</text>
@@ -84,7 +84,7 @@
       </div>
 
       <list class="course-list" bounces="true">
-        <list-item for="{{ weekCourses }}" class="week-item" type="weekCourse" onclick="goToDetail($item.id)">
+        <list-item for="{{ weekCourses }}" class="week-item" type="weekCourse" onclick="goToDetail($item.id, 'week')">
           <text class="week-time text-blue">{{ $item.startTime }}</text>
           <text class="week-name">{{ $item.name }}</text>
           <text class="week-location">{{ $item.classroom }}</text>
@@ -108,7 +108,7 @@
       <text class="sub-title">全部课程 · {{ allDayTitle }}</text>
 
       <list class="course-list" bounces="true">
-        <list-item for="{{ allCourses }}" class="week-item" type="allCourse">
+        <list-item for="{{ allCourses }}" class="week-item" type="allCourse" onclick="goToDetail($item.id, 'all')">
           <div class="all-item-info">
             <text class="week-time text-blue">{{ $item.startTime }}</text>
             <text class="week-name">{{ $item.name }}</text>
@@ -621,9 +621,12 @@ export default {
     const dayIndex = this.selectedDay === 7 ? 0 : this.selectedDay
     this.weekDayTitle = `${days[dayIndex]}`
 
+    // 判断是否是当天，只有当天才计算实时状态
+    const isToday = this.selectedWeek === this.currentWeek && this.selectedDay === getWeekdayNumber(now)
+
     this.weekCourses = courses.map(c => ({
       ...c,
-      status: getCourseStatus(c, now)
+      status: isToday ? getCourseStatus(c, now) : 'upcoming'
     }))
   },
 
@@ -673,11 +676,12 @@ export default {
     }
   },
 
-  goToDetail(courseId) {
+  goToDetail(courseId, source) {
     router.push({
       uri: '/pages/course-detail',
       params: {
-        courseId: courseId
+        courseId: courseId,
+        source: source || 'today'
       }
     })
   },

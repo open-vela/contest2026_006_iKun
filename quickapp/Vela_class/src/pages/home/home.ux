@@ -272,7 +272,7 @@
 
 <script>
 import router from '@system.router'
-import { getCurrentCourse, getNextCourse, getNextCourseAcrossDays, getCourseProgress, getCourseRemainingTime, getTodayCourses, isTodayCoursesFinished } from '../../common/schedule'
+import { getCurrentCourse, getNextCourse, getNextCourseAcrossDays, getCourseProgress, getCourseRemainingTime, getMinutesUntilStart, getTodayCourses, isTodayCoursesFinished } from '../../common/schedule'
 import { getNearestExam, getExamCountdown, getExamSummary } from '../../common/exam'
 import { getTaskSummary } from '../../common/task'
 import { getNow, formatTime, formatFullDate } from '../../common/time'
@@ -408,7 +408,7 @@ export default {
       this.status = 'next'
       this.mainCardClass = 'main-card-blue'
       this.nextCourse = nextCourse
-      const minutes = getCourseRemainingTime(nextCourse, now)
+      const minutes = getMinutesUntilStart(nextCourse, now)
       this.countdownText = `还有 ${minutes} 分钟`
     } else if (todayFinished && todayCourses.length > 0) {
       // 今日课程结束
