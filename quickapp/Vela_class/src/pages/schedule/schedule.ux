@@ -3,6 +3,9 @@
     <!-- 顶部标题 -->
     <div class="header">
       <text class="title">课表</text>
+      <div class="settings-btn" onclick="goToSettings">
+        <image class="settings-icon" src="../../common/icons/settings.png"></image>
+      </div>
     </div>
 
     <!-- 模式切换 + 添加按钮 -->
@@ -26,7 +29,7 @@
     <!-- 今日模式 -->
     <div if="{{ mode === 'today' }}" class="content">
       <div class="today-summary">
-        <text class="week-number">第{{ currentWeek }}周</text>
+        <text class="week-number">{{ currentWeek > 0 ? '第' + currentWeek + '周' : '学期未开始' }}</text>
         <text class="summary-text"> · {{ todayTitle }}</text>
       </div>
       <list class="course-list" bounces="true">
@@ -37,10 +40,9 @@
           <div class="timeline-dot {{ $item.status === 'finished' ? 'dot-gray' : ($item.status === 'ongoing' ? 'dot-green' : 'dot-blue') }}"></div>
           <div class="timeline-line {{ $item.status === 'finished' ? 'line-gray' : '' }}"></div>
           <div class="timeline-card {{ $item.status === 'ongoing' ? 'card-green' : '' }}" onclick="goToDetail($item.id, 'today')">
-            <text class="card-name {{ $item.status === 'finished' ? 'text-gray' : '' }}">{{ $item.name }}</text>
-            <text class="card-location {{ $item.status === 'finished' ? 'text-gray' : '' }}">{{ $item.classroom }} · {{ $item.teacher }}</text>
-            <text if="{{ $item.status === 'ongoing' }}" class="card-status text-green">正在进行 · 剩余{{ $item.remainingMin }}分钟</text>
-            <text if="{{ $item.status === 'finished' }}" class="card-status text-gray">已结束</text>
+            <marquee id="today-marquee-{{$idx}}" class="card-marquee {{ $item.status === 'finished' ? 'text-gray' : '' }}" scrollamount="64" loop="-1" text-offset="50">
+              {{ $item.name }} {{ $item.classroom }} · {{ $item.teacher }}{{ $item.status === 'ongoing' ? ' 正在进行 · 剩余' + $item.remainingMin + '分钟' : ($item.status === 'finished' ? ' 已结束' : '') }}
+            </marquee>
           </div>
         </list-item>
         <list-item if="{{ todayCourses.length === 0 }}" type="todayEmpty" class="empty-item">
@@ -55,12 +57,12 @@
       <!-- 周次选择器 -->
       <div class="week-selector-wrap">
         <div class="week-selector">
-          <div class="week-arrow {{ selectedWeek <= 1 ? 'arrow-disabled' : '' }}" onclick="previousWeek">
+          <div class="week-arrow {{ selectedWeek <= 0 ? 'arrow-disabled' : '' }}" onclick="previousWeek">
             <text class="arrow-text">‹</text>
           </div>
           <div class="week-center">
-            <text class="week-number">第{{ selectedWeek }}周</text>
-            <text if="{{ selectedWeek === currentWeek }}" class="current-mark">本周</text>
+            <text class="week-number">{{ selectedWeek > 0 ? '第' + selectedWeek + '周' : '学期未开始' }}</text>
+            <text if="{{ selectedWeek === currentWeek && currentWeek > 0 }}" class="current-mark">本周</text>
           </div>
           <div class="week-arrow {{ selectedWeek >= 16 ? 'arrow-disabled' : '' }}" onclick="nextWeek">
             <text class="arrow-text">›</text>
@@ -80,7 +82,7 @@
       </div>
 
       <div class="week-summary">
-        <text class="week-summary-text">第{{ selectedWeek }}周 · {{ weekDayTitle }} · {{ weekCourses.length }}节课</text>
+        <text class="week-summary-text">{{ selectedWeek > 0 ? '第' + selectedWeek + '周' : '学期未开始' }} · {{ weekDayTitle }} · {{ weekCourses.length }}节课</text>
       </div>
 
       <list class="course-list" bounces="true">
@@ -136,13 +138,35 @@
 }
 
 .header {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 12px;
+  position: relative;
+  width: 400px;
 }
 
 .title {
   font-size: 24px;
   font-weight: 700;
   color: #FFFFFF;
+}
+
+.settings-btn {
+  position: absolute;
+  right: 90px;
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  background-color: #2B2B2B;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-icon {
+  width: 24px;
+  height: 24px;
 }
 
 .mode-row {
@@ -445,6 +469,12 @@
   font-weight: 600;
 }
 
+.card-marquee {
+  font-size: 17px;
+  color: #FFFFFF;
+  width: 100%;
+}
+
 .week-list {
   flex-direction: column;
 }
@@ -515,21 +545,17 @@
 
 <script>
 import router from '@system.router'
-import { getTodayCourses, getCoursesByWeekday, getAllCoursesByWeekday, formatCourseWeeks, getCourseStatus, getCourseRemainingTime } from '../../common/schedule'
+import { getTodayCourses, getCoursesByWeekday, getAllCoursesByWeekday, formatCourseWeeks, getCourseStatus, getCourseRemainingTime, calculateCurrentWeek } from '../../common/schedule'
 import { getNow, getWeekdayNumber } from '../../common/time'
-import { ensureStorageReady, refreshCoursesFromStorage } from '../../common/storage'
-
-// 调试用当前教学周
-// TODO: 后续接入真实学期配置后，根据学期开始日期自动计算 currentWeek
-const DEBUG_CURRENT_WEEK = 3
+import { ensureStorageReady, refreshCoursesFromStorage, refreshSemesterStartFromStorage } from '../../common/storage'
 
 const DEBUG_NOW = null
 
 export default {
   private: {
     mode: 'today',
-    currentWeek: DEBUG_CURRENT_WEEK,
-    selectedWeek: DEBUG_CURRENT_WEEK,
+    currentWeek: 1,
+    selectedWeek: 1,
     selectedDay: 1,
     displayMonth: 0,
     todayTitle: '',
@@ -552,6 +578,8 @@ export default {
   onInit() {
     const now = getNow(DEBUG_NOW)
     this.selectedDay = getWeekdayNumber(now)
+    this.currentWeek = calculateCurrentWeek(now)
+    this.selectedWeek = this.currentWeek
 
     this.updateWeekDates(now)
     this.loadTodayCourses(now)
@@ -561,9 +589,15 @@ export default {
 
   onShow() {
     ensureStorageReady()
-      .then(() => refreshCoursesFromStorage())
+      .then(() => Promise.all([
+        refreshCoursesFromStorage(),
+        refreshSemesterStartFromStorage()
+      ]))
       .then(() => {
         const now = getNow(DEBUG_NOW)
+        this.currentWeek = calculateCurrentWeek(now)
+        this.selectedWeek = this.currentWeek
+        this.updateWeekDates(now)
         this.loadTodayCourses(now)
         this.loadWeekCourses(now)
         this.loadAllCourses()
@@ -689,6 +723,12 @@ export default {
   goToAddCourse() {
     router.push({
       uri: '/pages/course-add'
+    })
+  },
+
+  goToSettings() {
+    router.push({
+      uri: '/pages/schedule-settings'
     })
   }
 }

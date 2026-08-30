@@ -1,0 +1,289 @@
+<template>
+  <div class="page">
+    <!-- 顶部标题 -->
+    <div class="header">
+      <text class="title">课表设置</text>
+    </div>
+
+    <!-- 内容区域 -->
+    <scroll class="settings-scroll" scroll-y="true" bounces="true">
+      <div class="content">
+        <!-- 学期第一周设置 -->
+        <div class="setting-section">
+          <text class="setting-label">学期第一周</text>
+          <text class="setting-desc">选择任意一天，系统将自动识别该日期所在周为第1周</text>
+
+          <!-- 当前设置显示 -->
+          <div if="{{ week1StartDate }}" class="current-setting">
+            <text class="current-text">第一周：{{ week1MondayText }} - {{ week1SundayText }}</text>
+          </div>
+          <div if="{{ !week1StartDate }}" class="current-setting">
+            <text class="current-text">未设置（使用默认计算）</text>
+          </div>
+
+          <!-- 日期选择器 -->
+          <picker class="date-picker" type="text" range="{{ dateOptions }}" selected="{{ selectedDateIndex }}" onchange="onDateChange">
+          </picker>
+
+          <!-- 选择后提示 -->
+          <div if="{{ previewMonday }}" class="preview-info">
+            <text class="preview-text">已选择日期所在周：</text>
+            <text class="preview-week">{{ previewMonday }} - {{ previewSunday }}</text>
+            <text class="preview-hint">将作为第1周</text>
+          </div>
+
+          <!-- 保存按钮 -->
+          <div class="btn-save" onclick="saveSetting">
+            <text class="btn-text">保存设置</text>
+          </div>
+        </div>
+
+        <div class="bottom-safe-space"></div>
+      </div>
+    </scroll>
+  </div>
+</template>
+
+<style>
+.page {
+  flex-direction: column;
+  align-items: center;
+  background-color: #000000;
+  width: 466px;
+  height: 466px;
+  padding-top: 45px;
+}
+
+.header {
+  margin-bottom: 15px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.settings-scroll {
+  width: 400px;
+  height: 380px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.content {
+  width: 380px;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.setting-section {
+  width: 100%;
+  flex-direction: column;
+  padding: 15px;
+  background-color: #171717;
+  border-radius: 20px;
+  margin-bottom: 15px;
+}
+
+.setting-label {
+  font-size: 18px;
+  font-weight: 600;
+  color: #FFFFFF;
+  margin-bottom: 8px;
+}
+
+.setting-desc {
+  font-size: 13px;
+  color: #8F8F8F;
+  margin-bottom: 12px;
+}
+
+.current-setting {
+  margin-bottom: 12px;
+}
+
+.current-text {
+  font-size: 15px;
+  color: #4FA3FF;
+}
+
+.date-picker {
+  width: 100%;
+  height: 48px;
+  background-color: #2B2B2B;
+  border-radius: 12px;
+  color: #FFFFFF;
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+.preview-info {
+  flex-direction: column;
+  margin-bottom: 12px;
+  padding: 10px;
+  background-color: #2B2B2B;
+  border-radius: 10px;
+}
+
+.preview-text {
+  font-size: 13px;
+  color: #8F8F8F;
+  margin-bottom: 4px;
+}
+
+.preview-week {
+  font-size: 16px;
+  color: #4FA3FF;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.preview-hint {
+  font-size: 13px;
+  color: #58D68D;
+}
+
+.btn-save {
+  width: 100%;
+  height: 46px;
+  border-radius: 23px;
+  background-color: #4FA3FF;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.bottom-safe-space {
+  height: 80px;
+  flex-shrink: 0;
+}
+</style>
+
+<script>
+import router from '@system.router'
+import prompt from '@system.prompt'
+import { getSemesterWeek1Start, setSemesterWeek1Start, ensureStorageReady } from '../../common/storage'
+
+export default {
+  private: {
+    week1StartDate: '',
+    week1MondayText: '',
+    week1SundayText: '',
+    dateOptions: [],
+    dateValues: [],
+    selectedDateIndex: 14, // 默认选择约第15项（中间位置）
+    previewMonday: '',
+    previewSunday: ''
+  },
+
+  onInit() {
+    ensureStorageReady().then(() => {
+      this.initDateOptions()
+      this.loadCurrentSetting()
+    })
+  },
+
+  initDateOptions() {
+    const options = []
+    const values = []
+    const now = new Date()
+
+    // 生成过去30天到未来120天的日期选项
+    for (let i = -30; i <= 120; i++) {
+      const date = new Date(now)
+      date.setDate(date.getDate() + i)
+      const year = date.getFullYear()
+      const month = date.getMonth() + 1
+      const day = date.getDate()
+      const weekday = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][date.getDay()]
+
+      options.push(`${year}年${month}月${day}日 ${weekday}`)
+      values.push(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`)
+    }
+
+    this.dateOptions = options
+    this.dateValues = values
+  },
+
+  loadCurrentSetting() {
+    const currentStart = getSemesterWeek1Start()
+    if (currentStart) {
+      this.week1StartDate = currentStart
+      this.updateWeek1Display(currentStart)
+
+      // 尝试找到对应的日期索引
+      const idx = this.dateValues.indexOf(currentStart)
+      if (idx !== -1) {
+        this.selectedDateIndex = idx
+      }
+    }
+  },
+
+  updateWeek1Display(mondayStr) {
+    const monday = new Date(mondayStr + 'T00:00:00')
+    const sunday = new Date(monday)
+    sunday.setDate(sunday.getDate() + 6)
+
+    this.week1MondayText = `${monday.getMonth() + 1}月${monday.getDate()}日`
+    this.week1SundayText = `${sunday.getMonth() + 1}月${sunday.getDate()}日`
+  },
+
+  getMondayOfWeek(dateStr) {
+    const date = new Date(dateStr + 'T00:00:00')
+    const day = date.getDay()
+    const diff = date.getDate() - day + (day === 0 ? -6 : 1)
+    date.setDate(diff)
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+  },
+
+  onDateChange(e) {
+    this.selectedDateIndex = e.newSelected
+    const selectedDateStr = this.dateValues[this.selectedDateIndex]
+
+    // 计算该日期所在周的周一
+    const mondayStr = this.getMondayOfWeek(selectedDateStr)
+    const monday = new Date(mondayStr + 'T00:00:00')
+    const sunday = new Date(monday)
+    sunday.setDate(sunday.getDate() + 6)
+
+    this.previewMonday = `${monday.getMonth() + 1}月${monday.getDate()}日`
+    this.previewSunday = `${sunday.getMonth() + 1}月${sunday.getDate()}日`
+  },
+
+  saveSetting() {
+    const selectedDateStr = this.dateValues[this.selectedDateIndex]
+    const mondayStr = this.getMondayOfWeek(selectedDateStr)
+
+    setSemesterWeek1Start(mondayStr)
+      .then(() => {
+        this.week1StartDate = mondayStr
+        this.updateWeek1Display(mondayStr)
+        this.previewMonday = ''
+        this.previewSunday = ''
+        prompt.showToast({
+          message: '设置已保存',
+          duration: 2000
+        })
+      })
+      .catch((err) => {
+        console.error('Failed to save setting:', err)
+        prompt.showToast({
+          message: '保存失败',
+          duration: 2000
+        })
+      })
+  },
+
+  goBack() {
+    router.back()
+  }
+}
+</script>

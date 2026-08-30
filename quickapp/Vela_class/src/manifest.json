@@ -64,6 +64,9 @@
       },
       "pages/debug": {
         "component": "debug"
+      },
+      "pages/schedule-settings": {
+        "component": "schedule-settings"
       }
     }
   }

@@ -10,13 +10,15 @@ import { courses, exams, tasks } from './data'
 const STORAGE_KEYS = {
   COURSES: 'campus_courses',
   EXAMS: 'campus_exams',
-  TASKS: 'campus_tasks'
+  TASKS: 'campus_tasks',
+  SEMESTER_START: 'campus_semester_start'
 }
 
 // 内存缓存
 let courseCache = []
 let examCache = []
 let taskCache = []
+let semesterWeek1StartCache = null // 学期第一周周一日期字符串 YYYY-MM-DD
 let storageReady = false
 let initPromise = null
 
@@ -38,7 +40,7 @@ export function initStorage() {
 
   initPromise = new Promise((resolve) => {
     let loaded = 0
-    const total = 3
+    const total = 4 // 课程、考试、任务、学期设置
 
     const checkComplete = () => {
       loaded++
@@ -106,6 +108,20 @@ export function initStorage() {
         console.error('Failed to get tasks:', code)
         taskCache = [...tasks]
         saveTasksToStorage()
+        checkComplete()
+      }
+    })
+
+    // 读取学期第一周设置
+    storage.get({
+      key: STORAGE_KEYS.SEMESTER_START,
+      success: function (data) {
+        semesterWeek1StartCache = data || null
+        checkComplete()
+      },
+      fail: function (data, code) {
+        console.error('Failed to get semester start:', code)
+        semesterWeek1StartCache = null
         checkComplete()
       }
     })
@@ -653,6 +669,58 @@ export function resetToMockData() {
       value: JSON.stringify(taskCache),
       success: () => checkComplete(true),
       fail: () => checkComplete(false)
+    })
+  })
+}
+
+/**
+ * 获取学期第一周周一日期
+ * @returns {string|null} YYYY-MM-DD 格式，未设置时返回 null
+ */
+export function getSemesterWeek1Start() {
+  return semesterWeek1StartCache
+}
+
+/**
+ * 从 Storage 重新读取学期第一周设置
+ * @returns {Promise<string|null>}
+ */
+export function refreshSemesterStartFromStorage() {
+  return new Promise((resolve, reject) => {
+    storage.get({
+      key: STORAGE_KEYS.SEMESTER_START,
+      success: function (data) {
+        semesterWeek1StartCache = data || null
+        resolve(semesterWeek1StartCache)
+      },
+      fail: function (data, code) {
+        console.error('Failed to refresh semester start from storage:', code)
+        resolve(semesterWeek1StartCache)
+      }
+    })
+  })
+}
+
+/**
+ * 设置学期第一周周一日期
+ * @param {string} dateStr YYYY-MM-DD 格式的日期字符串
+ * @returns {Promise}
+ */
+export function setSemesterWeek1Start(dateStr) {
+  return new Promise((resolve, reject) => {
+    semesterWeek1StartCache = dateStr
+
+    storage.set({
+      key: STORAGE_KEYS.SEMESTER_START,
+      value: dateStr,
+      success: function () {
+        console.log('Semester week1 start saved:', dateStr)
+        resolve()
+      },
+      fail: function (data, code) {
+        console.error('Failed to save semester start:', code)
+        reject(new Error('Failed to save semester start'))
+      }
     })
   })
 }
