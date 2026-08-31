@@ -6,6 +6,12 @@
 import { getTasks, updateTaskStatus } from './storage'
 import { parseDateTime, diffMinutes, getNow, isToday } from './time'
 
+// 性能诊断
+const TASK_PERF_START = Date.now()
+function perfLog(label) {
+  console.log('[PERF:TASK]', label, '+', Date.now() - TASK_PERF_START, 'ms')
+}
+
 /**
  * 获取已逾期待办（截止时间早于当前时间且未完成）
  * @param {Date} now
@@ -129,6 +135,7 @@ export function formatTaskCountdown(task, now) {
  * @returns {object} { todayCount, totalCount, urgentCount }
  */
 export function getTaskSummary(now) {
+  perfLog('getTaskSummary_START')
   const todayTasks = getTodayTasks(now)
   const allTasks = getTasks().filter(t => !t.finished)
   const urgentCount = allTasks.filter(t => {
@@ -136,11 +143,13 @@ export function getTaskSummary(now) {
     return countdown.isUrgent
   }).length
 
-  return {
+  const result = {
     todayCount: todayTasks.length,
     totalCount: allTasks.length,
     urgentCount
   }
+  perfLog('getTaskSummary_END (today: ' + result.todayCount + ', total: ' + result.totalCount + ')')
+  return result
 }
 
 /**

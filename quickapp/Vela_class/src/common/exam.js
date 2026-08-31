@@ -6,12 +6,19 @@
 import { getExams } from './storage'
 import { formatCountdown, formatExamCountdown, parseDateTime, getNow } from './time'
 
+// 性能诊断
+const EXAM_PERF_START = Date.now()
+function perfLog(label) {
+  console.log('[PERF:EXAM]', label, '+', Date.now() - EXAM_PERF_START, 'ms')
+}
+
 /**
  * 获取最近的考试
  * @param {Date} now
  * @returns {object|null}
  */
 export function getNearestExam(now) {
+  perfLog('getNearestExam_START')
   const exams = getExams()
   const upcomingExams = exams
     .filter(e => parseDateTime(`${e.date}T${e.startTime}:00`) > now)
@@ -20,7 +27,9 @@ export function getNearestExam(now) {
       const dateB = parseDateTime(`${b.date}T${b.startTime}:00`)
       return dateA - dateB
     })
-  return upcomingExams.length > 0 ? upcomingExams[0] : null
+  const result = upcomingExams.length > 0 ? upcomingExams[0] : null
+  perfLog('getNearestExam_END (found: ' + !!result + ')')
+  return result
 }
 
 /**
@@ -99,15 +108,19 @@ export function getExamStatus(exam, now) {
  * @returns {object} { count, nearestCourse, daysUntil }
  */
 export function getExamSummary(now) {
+  perfLog('getExamSummary_START')
   const nearest = getNearestExam(now)
   if (!nearest) {
+    perfLog('getExamSummary_END (no exam)')
     return { count: 0, nearestCourse: null, daysUntil: null }
   }
 
   const countdown = getExamCountdown(nearest, now)
-  return {
+  const result = {
     count: getUpcomingExams(now).length,
     nearestCourse: nearest.course,
     daysUntil: countdown
   }
+  perfLog('getExamSummary_END (count: ' + result.count + ')')
+  return result
 }

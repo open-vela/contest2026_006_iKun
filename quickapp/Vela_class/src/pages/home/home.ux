@@ -291,7 +291,13 @@ import { getCurrentCourse, getNextCourse, getNextCourseAcrossDays, getCourseProg
 import { getNearestExam, getExamCountdown, getExamSummary } from '../../common/exam'
 import { getTaskSummary } from '../../common/task'
 import { getNow, formatTime, formatFullDate } from '../../common/time'
-import { ensureStorageReady, refreshTasksFromStorage, refreshExamsFromStorage, refreshCoursesFromStorage } from '../../common/storage'
+import { ensureStorageReady } from '../../common/storage'
+
+// 性能诊断：记录首页启动时间
+const HOME_PERF_START = Date.now()
+function perfLog(label) {
+  console.log('[PERF:HOME]', label, '+', Date.now() - HOME_PERF_START, 'ms')
+}
 
 // 调试模式：设置为 null 使用真实时间，设置为 Date 对象使用模拟时间
 const DEBUG_NOW = null
@@ -326,24 +332,42 @@ export default {
   },
 
   onInit() {
+    perfLog('HOME_INIT_START')
+    
+    const updateTimeStart = Date.now()
     this.updateTime()
+    perfLog('HOME_UPDATE_TIME: ' + (Date.now() - updateTimeStart) + 'ms')
 
+    perfLog('HOME_ENSURE_STORAGE_START')
     ensureStorageReady()
-      .then(() => refreshTasksFromStorage())
       .then(() => {
+        perfLog('HOME_STORAGE_READY')
+        
+        const updateStatusStart = Date.now()
+        // Storage 已初始化，直接使用缓存数据更新状态
         this.updateStatus()
+        perfLog('HOME_STATUS_END: ' + (Date.now() - updateStatusStart) + 'ms')
+        
+        perfLog('HOME_READY')
 
+        // 启动定时器：只更新时间，不重复读取 Storage
         if (!this.timer) {
           this.timer = setInterval(() => {
             this.updateTime()
             this.updateStatus()
           }, 1000)
+          perfLog('HOME_TIMER_STARTED')
         }
       })
       .catch((err) => {
         console.error('Failed to initialize storage on home:', err)
-
+        perfLog('HOME_STORAGE_ERROR: ' + err.message)
+        
+        const updateStatusStart = Date.now()
         this.updateStatus()
+        perfLog('HOME_STATUS_END (error path): ' + (Date.now() - updateStatusStart) + 'ms')
+        
+        perfLog('HOME_READY (error path)')
 
         if (!this.timer) {
           this.timer = setInterval(() => {
@@ -352,25 +376,26 @@ export default {
           }, 1000)
         }
       })
+    perfLog('HOME_INIT_END')
   },
 
   onShow() {
+    perfLog('HOME_SHOW_START')
+    
+    // 从其他页面返回时，刷新数据（不重复初始化 Storage）
     ensureStorageReady()
-      .then(() => Promise.all([
-        refreshCoursesFromStorage(),
-        refreshExamsFromStorage(),
-        refreshTasksFromStorage()
-      ]))
       .then(() => {
+        perfLog('HOME_SHOW_STORAGE_READY')
         this.updateTime()
         this.updateStatus()
+        perfLog('HOME_SHOW_END')
       })
       .catch((err) => {
         console.error('Failed to refresh home:', err)
-
-        // 即使重新读取 Storage 失败，也使用当前缓存刷新一次界面
+        perfLog('HOME_SHOW_ERROR: ' + err.message)
         this.updateTime()
         this.updateStatus()
+        perfLog('HOME_SHOW_END (error)')
       })
   },
 
@@ -388,29 +413,48 @@ export default {
   },
 
   updateStatus() {
+    perfLog('UPDATE_STATUS_START')
     const now = getNow(DEBUG_NOW)
 
     // 获取当前课程
+    const currentCourseStart = Date.now()
     const currentCourse = getCurrentCourse(now)
+    perfLog('getCurrentCourse: ' + (Date.now() - currentCourseStart) + 'ms')
+    
     // 获取下一节课
+    const nextCourseStart = Date.now()
     const nextCourse = getNextCourse(now)
+    perfLog('getNextCourse: ' + (Date.now() - nextCourseStart) + 'ms')
+    
     // 获取跨天的下一节课
+    const nextAcrossStart = Date.now()
     const nextAcross = getNextCourseAcrossDays(now)
+    perfLog('getNextCourseAcrossDays: ' + (Date.now() - nextAcrossStart) + 'ms')
+    
     // 今日课程是否结束
+    const todayFinishedStart = Date.now()
     const todayFinished = isTodayCoursesFinished(now)
+    perfLog('isTodayCoursesFinished: ' + (Date.now() - todayFinishedStart) + 'ms')
+    
     // 今日课程列表
+    const todayCoursesStart = Date.now()
     const todayCourses = getTodayCourses(now)
+    perfLog('getTodayCourses: ' + (Date.now() - todayCoursesStart) + 'ms')
 
     // 考试信息
+    const nearestExamStart = Date.now()
     const nearestExam = getNearestExam(now)
     this.nearestExam = nearestExam
     if (nearestExam) {
       this.examCountdown = getExamCountdown(nearestExam, now)
     }
     this.examSummary = getExamSummary(now)
+    perfLog('getNearestExam+getExamSummary: ' + (Date.now() - nearestExamStart) + 'ms')
 
     // 待办信息
+    const taskSummaryStart = Date.now()
     this.taskSummary = getTaskSummary(now)
+    perfLog('getTaskSummary: ' + (Date.now() - taskSummaryStart) + 'ms')
 
     // 今日课程数量
     this.todayCourseCount = todayCourses.length
@@ -454,6 +498,8 @@ export default {
       this.status = 'noClass'
       this.mainCardClass = ''
     }
+    
+    perfLog('UPDATE_STATUS_END')
   },
 
   goToCourseDetail() {

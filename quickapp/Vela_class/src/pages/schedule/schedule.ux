@@ -57,7 +57,7 @@
       <!-- 周次选择器 -->
       <div class="week-selector-wrap">
         <div class="week-selector">
-          <div class="week-arrow {{ selectedWeek <= 0 ? 'arrow-disabled' : '' }}" onclick="previousWeek">
+          <div class="week-arrow {{ selectedWeek <= 1 ? 'arrow-disabled' : '' }}" onclick="previousWeek">
             <text class="arrow-text">‹</text>
           </div>
           <div class="week-center">
@@ -547,7 +547,7 @@
 import router from '@system.router'
 import { getTodayCourses, getCoursesByWeekday, getAllCoursesByWeekday, formatCourseWeeks, getCourseStatus, getCourseRemainingTime, calculateCurrentWeek } from '../../common/schedule'
 import { getNow, getWeekdayNumber } from '../../common/time'
-import { ensureStorageReady, refreshCoursesFromStorage, refreshSemesterStartFromStorage } from '../../common/storage'
+import { ensureStorageReady, refreshCoursesFromStorage, refreshSemesterStartFromStorage, getSemesterWeek1Start } from '../../common/storage'
 
 const DEBUG_NOW = null
 
@@ -579,7 +579,8 @@ export default {
     const now = getNow(DEBUG_NOW)
     this.selectedDay = getWeekdayNumber(now)
     this.currentWeek = calculateCurrentWeek(now)
-    this.selectedWeek = this.currentWeek
+    // 学期未开始时，默认显示第1周
+    this.selectedWeek = this.currentWeek > 0 ? this.currentWeek : 1
 
     this.updateWeekDates(now)
     this.loadTodayCourses(now)
@@ -596,7 +597,8 @@ export default {
       .then(() => {
         const now = getNow(DEBUG_NOW)
         this.currentWeek = calculateCurrentWeek(now)
-        this.selectedWeek = this.currentWeek
+        // 学期未开始时，默认显示第1周
+        this.selectedWeek = this.currentWeek > 0 ? this.currentWeek : 1
         this.updateWeekDates(now)
         this.loadTodayCourses(now)
         this.loadWeekCourses(now)
@@ -608,17 +610,26 @@ export default {
   },
 
   // 计算 selectedWeek 对应的日期
+  // 根据 semesterWeek1Start 直接计算，不依赖当前自然周
   updateWeekDates(now) {
-    const currentWeekday = getWeekdayNumber(now)
-    // 计算当前周的星期一日期
-    const mondayOffset = currentWeekday - 1
-    const monday = new Date(now)
-    monday.setDate(monday.getDate() - mondayOffset)
+    const semesterStart = getSemesterWeek1Start()
+    let targetMonday
 
-    // 根据 selectedWeek 与 currentWeek 的差值计算目标周的星期一
-    const weekOffset = this.selectedWeek - this.currentWeek
-    const targetMonday = new Date(monday)
-    targetMonday.setDate(targetMonday.getDate() + weekOffset * 7)
+    if (semesterStart && this.selectedWeek > 0) {
+      // 根据学期第一周直接计算目标教学周的周一
+      // 第1周：semesterWeek1Start
+      // 第N周：semesterWeek1Start + (N-1) * 7天
+      const week1Monday = new Date(semesterStart + 'T00:00:00')
+      targetMonday = new Date(week1Monday)
+      targetMonday.setDate(targetMonday.getDate() + (this.selectedWeek - 1) * 7)
+    } else {
+      // 未设置学期第一周时，使用当前自然周作为备选
+      const currentWeekday = getWeekdayNumber(now)
+      const mondayOffset = currentWeekday - 1
+      const monday = new Date(now)
+      monday.setDate(monday.getDate() - mondayOffset)
+      targetMonday = monday
+    }
 
     // 更新 weekDays 的日期和月份
     this.weekDays.forEach((d, index) => {
@@ -693,6 +704,7 @@ export default {
   },
 
   previousWeek() {
+    // 最小值为1，不能进入第0周
     if (this.selectedWeek > 1) {
       this.selectedWeek -= 1
       const now = getNow(DEBUG_NOW)

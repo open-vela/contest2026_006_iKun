@@ -1,11 +1,26 @@
 <script>
 import { initStorage } from './common/storage'
 
+// 性能诊断：记录应用启动时间
+const APP_START_TIME = Date.now()
+function perfLog(label) {
+  console.log('[PERF:APP]', label, '+', Date.now() - APP_START_TIME, 'ms')
+}
+
 export default {
   onCreate() {
+    perfLog('APP_CREATE_START')
     console.log('App created')
     // 初始化本地存储
+    perfLog('INIT_STORAGE_CALL')
     initStorage()
+      .then(() => {
+        perfLog('INIT_STORAGE_DONE')
+      })
+      .catch((err) => {
+        perfLog('INIT_STORAGE_ERROR: ' + err.message)
+      })
+    perfLog('APP_CREATE_END')
   },
   onDestroy() {
     console.log('App destroyed')

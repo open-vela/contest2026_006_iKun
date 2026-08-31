@@ -7,6 +7,12 @@
 import storage from '@system.storage'
 import { courses, exams, tasks } from './data'
 
+// 性能诊断：记录 Storage 初始化时间
+const STORAGE_PERF_START = Date.now()
+function perfLog(label) {
+  console.log('[PERF:STORAGE]', label, '+', Date.now() - STORAGE_PERF_START, 'ms')
+}
+
 const STORAGE_KEYS = {
   COURSES: 'campus_courses',
   EXAMS: 'campus_exams',
@@ -28,100 +34,135 @@ let initPromise = null
  * @returns {Promise}
  */
 export function initStorage() {
+  perfLog('INIT_STORAGE_START')
+  
   // 已经初始化完成
   if (storageReady) {
+    perfLog('INIT_STORAGE_ALREADY_READY')
     return Promise.resolve()
   }
 
   // 正在初始化中，返回同一个 Promise
   if (initPromise) {
+    perfLog('INIT_STORAGE_IN_PROGRESS')
     return initPromise
   }
 
   initPromise = new Promise((resolve) => {
     let loaded = 0
     const total = 4 // 课程、考试、任务、学期设置
+    const startTime = Date.now()
 
     const checkComplete = () => {
       loaded++
+      const elapsed = Date.now() - startTime
+      perfLog('STORAGE_LOADED_' + loaded + '/' + total + ' +' + elapsed + 'ms')
+      
       if (loaded >= total) {
         storageReady = true
+        perfLog('INIT_STORAGE_END (total: ' + elapsed + 'ms)')
         resolve()
       }
     }
 
     // 读取课程
+    const coursesStartTime = Date.now()
+    perfLog('COURSES_GET_START')
     storage.get({
       key: STORAGE_KEYS.COURSES,
       success: function (data) {
         try {
+          const parseStart = Date.now()
           courseCache = data ? JSON.parse(data) : [...courses]
+          perfLog('COURSES_GET_DONE (parse: ' + (Date.now() - parseStart) + 'ms, data: ' + (data ? 'exists' : 'empty') + ')')
         } catch (e) {
           console.error('Failed to parse courses:', e)
           courseCache = [...courses]
+          perfLog('COURSES_GET_ERROR')
         }
         checkComplete()
       },
       fail: function (data, code) {
         console.error('Failed to get courses:', code)
         courseCache = [...courses]
+        perfLog('COURSES_GET_FAIL: ' + code)
         checkComplete()
       }
     })
 
     // 读取考试
+    const examsStartTime = Date.now()
+    perfLog('EXAMS_GET_START')
     storage.get({
       key: STORAGE_KEYS.EXAMS,
       success: function (data) {
         try {
+          const parseStart = Date.now()
           examCache = data ? JSON.parse(data) : [...exams]
+          perfLog('EXAMS_GET_DONE (parse: ' + (Date.now() - parseStart) + 'ms, data: ' + (data ? 'exists' : 'empty') + ')')
         } catch (e) {
           console.error('Failed to parse exams:', e)
           examCache = [...exams]
+          perfLog('EXAMS_GET_ERROR')
         }
         checkComplete()
       },
       fail: function (data, code) {
         console.error('Failed to get exams:', code)
         examCache = [...exams]
+        perfLog('EXAMS_GET_FAIL: ' + code)
         checkComplete()
       }
     })
 
     // 读取任务
+    const tasksStartTime = Date.now()
+    perfLog('TASKS_GET_START')
     storage.get({
       key: STORAGE_KEYS.TASKS,
       success: function (data) {
         try {
+          const parseStart = Date.now()
           taskCache = data ? JSON.parse(data) : [...tasks]
+          perfLog('TASKS_GET_DONE (parse: ' + (Date.now() - parseStart) + 'ms, data: ' + (data ? 'exists' : 'empty') + ')')
         } catch (e) {
           console.error('Failed to parse tasks:', e)
           taskCache = [...tasks]
+          perfLog('TASKS_GET_ERROR')
         }
         // 如果是首次运行（没有存储数据），写入 Mock 数据
         if (!data) {
+          perfLog('TASKS_SAVE_DEFAULT_START')
           saveTasksToStorage()
+          perfLog('TASKS_SAVE_DEFAULT_END')
         }
         checkComplete()
       },
       fail: function (data, code) {
         console.error('Failed to get tasks:', code)
         taskCache = [...tasks]
+        perfLog('TASKS_GET_FAIL: ' + code)
+        perfLog('TASKS_SAVE_DEFAULT_START (fail)')
         saveTasksToStorage()
+        perfLog('TASKS_SAVE_DEFAULT_END (fail)')
         checkComplete()
       }
     })
 
     // 读取学期第一周设置
+    const semesterStartTime = Date.now()
+    perfLog('SEMESTER_GET_START')
     storage.get({
       key: STORAGE_KEYS.SEMESTER_START,
       success: function (data) {
         semesterWeek1StartCache = data || null
+        perfLog('SEMESTER_GET_DONE (data: ' + (data ? 'exists' : 'empty') + ')')
         checkComplete()
       },
       fail: function (data, code) {
         console.error('Failed to get semester start:', code)
         semesterWeek1StartCache = null
+        perfLog('SEMESTER_GET_FAIL: ' + code)
         checkComplete()
       }
     })
