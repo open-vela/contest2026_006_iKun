@@ -77,7 +77,7 @@ export function getTodayCourses(now, currentWeek) {
   const week = currentWeek !== undefined ? currentWeek : calculateCurrentWeek(now)
   const weekday = getWeekdayNumber(now)
   return getCourses()
-    .filter(c => c.weekday === weekday && c.weeks.includes(week))
+    .filter(c => c.weekday === weekday && Array.isArray(c.weeks) && c.weeks.includes(week))
     .sort((a, b) => a.startTime.localeCompare(b.startTime))
 }
 
@@ -89,7 +89,7 @@ export function getTodayCourses(now, currentWeek) {
  */
 export function getCoursesByWeekday(weekday, currentWeek = 1) {
   return getCourses()
-    .filter(c => c.weekday === weekday && c.weeks.includes(currentWeek))
+    .filter(c => c.weekday === weekday && Array.isArray(c.weeks) && c.weeks.includes(currentWeek))
     .sort((a, b) => a.startTime.localeCompare(b.startTime))
 }
 
@@ -212,7 +212,13 @@ export function getNextCourseAcrossDays(now, currentWeek) {
     const futureDate = new Date(now)
     futureDate.setDate(futureDate.getDate() + i)
     const weekday = getWeekdayNumber(futureDate)
-    const courses = getCoursesByWeekday(weekday, week)
+    // 为每个未来日期计算它自己的教学周
+    const futureWeek = calculateCurrentWeek(futureDate)
+    // 跳过学期未开始的情况
+    if (futureWeek < 1) {
+      continue
+    }
+    const courses = getCoursesByWeekday(weekday, futureWeek)
     if (courses.length > 0) {
       perfLog('getNextCourseAcrossDays_END (found day +' + i + ', loop: ' + (Date.now() - futureLoopStart) + 'ms)')
       return { course: courses[0], daysLater: i, date: futureDate }

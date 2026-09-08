@@ -41,8 +41,9 @@
       <div if="{{ status === 'noClass' }}" class="card-content">
         <text class="status-label status-gray">今日无课</text>
         <div if="{{ nearestExam }}" class="exam-preview">
-          <text class="exam-label">最近考试还有</text>
+          <text class="exam-label">{{ examCountdown.isOngoing ? '考试进行中' : '最近考试还有' }}</text>
           <text class="exam-countdown">{{ examCountdown.value }} {{ examCountdown.unit }}</text>
+          <text if="{{ examCountdown.isOngoing && examCountdown.remainingMinutes > 0 }}" class="exam-remaining">剩余{{ examCountdown.remainingMinutes }}分钟</text>
           <text class="exam-course">{{ nearestExam.course }}</text>
         </div>
       </div>
@@ -228,6 +229,12 @@
   margin: 5px 0;
 }
 
+.exam-remaining {
+  font-size: 16px;
+  color: #58D68D;
+  margin-bottom: 2px;
+}
+
 .exam-course {
   font-size: 20px;
   color: #FFFFFF;
@@ -291,7 +298,7 @@ import { getCurrentCourse, getNextCourse, getNextCourseAcrossDays, getCourseProg
 import { getNearestExam, getExamCountdown, getExamSummary } from '../../common/exam'
 import { getTaskSummary } from '../../common/task'
 import { getNow, formatTime, formatFullDate } from '../../common/time'
-import { ensureStorageReady } from '../../common/storage'
+import { ensureStorageReady, refreshExamsFromStorage, refreshTasksFromStorage, refreshCoursesFromStorage, syncMockDataSetting } from '../../common/storage'
 
 // 性能诊断：记录首页启动时间
 const HOME_PERF_START = Date.now()
@@ -322,11 +329,14 @@ export default {
     countdownText: '',
     nextCourseLabel: '',
     nearestExam: null,
-    examCountdown: { value: 0, unit: '' },
+    currentExam: null,  // 保存当前最近考试对象，用于轻量刷新倒计时
+    examCountdown: { value: 0, unit: '', status: '', isOngoing: false, remainingMinutes: 0 },
     examSummary: { count: 0, nearestCourse: null },
     taskSummary: { todayCount: 0, totalCount: 0, urgentCount: 0 },
     todayCourseCount: 0,
-    timer: null,
+    timeTimer: null,    // 时间更新定时器（1秒）
+    courseTimer: null,  // 课程状态定时器（30秒）
+    examTimer: null,    // 考试倒计时定时器（60秒）
     debugClickCount: 0,
     debugClickTimer: null
   },
@@ -340,41 +350,29 @@ export default {
 
     perfLog('HOME_ENSURE_STORAGE_START')
     ensureStorageReady()
+      .then(() => syncMockDataSetting())
       .then(() => {
         perfLog('HOME_STORAGE_READY')
         
-        const updateStatusStart = Date.now()
-        // Storage 已初始化，直接使用缓存数据更新状态
-        this.updateStatus()
-        perfLog('HOME_STATUS_END: ' + (Date.now() - updateStatusStart) + 'ms')
+        // 首次加载完整数据
+        this.updateStaticSummary()  // 考试和待办摘要
+        this.updateCourseStatus()   // 课程状态
         
         perfLog('HOME_READY')
 
-        // 启动定时器：只更新时间，不重复读取 Storage
-        if (!this.timer) {
-          this.timer = setInterval(() => {
-            this.updateTime()
-            this.updateStatus()
-          }, 1000)
-          perfLog('HOME_TIMER_STARTED')
-        }
+        // 启动定时器
+        this.startTimers()
       })
       .catch((err) => {
         console.error('Failed to initialize storage on home:', err)
         perfLog('HOME_STORAGE_ERROR: ' + err.message)
         
-        const updateStatusStart = Date.now()
-        this.updateStatus()
-        perfLog('HOME_STATUS_END (error path): ' + (Date.now() - updateStatusStart) + 'ms')
-        
+        // 即使出错也要显示数据
+        this.updateStaticSummary()
+        this.updateCourseStatus()
         perfLog('HOME_READY (error path)')
 
-        if (!this.timer) {
-          this.timer = setInterval(() => {
-            this.updateTime()
-            this.updateStatus()
-          }, 1000)
-        }
+        this.startTimers()
       })
     perfLog('HOME_INIT_END')
   },
@@ -382,27 +380,83 @@ export default {
   onShow() {
     perfLog('HOME_SHOW_START')
     
-    // 从其他页面返回时，刷新数据（不重复初始化 Storage）
+    // 从其他页面返回时，先同步Mock数据设置，再刷新数据
     ensureStorageReady()
+      .then(() => syncMockDataSetting())
+      .then(() => Promise.all([
+        refreshExamsFromStorage(),
+        refreshTasksFromStorage(),
+        refreshCoursesFromStorage()
+      ]))
       .then(() => {
         perfLog('HOME_SHOW_STORAGE_READY')
         this.updateTime()
-        this.updateStatus()
+        this.updateStaticSummary()  // 刷新考试和待办摘要
+        this.updateCourseStatus()   // 刷新课程状态
+        this.startTimers()          // 重新启动定时器
         perfLog('HOME_SHOW_END')
       })
       .catch((err) => {
         console.error('Failed to refresh home:', err)
         perfLog('HOME_SHOW_ERROR: ' + err.message)
         this.updateTime()
-        this.updateStatus()
+        this.updateStaticSummary()
+        this.updateCourseStatus()
+        this.startTimers()          // 重新启动定时器
         perfLog('HOME_SHOW_END (error)')
       })
   },
 
+  onHide() {
+    perfLog('HOME_HIDE')
+    // 页面隐藏时清理定时器
+    this.clearTimers()
+  },
+
   onDestroy() {
-    if (this.timer) {
-      clearInterval(this.timer)
-      this.timer = null
+    perfLog('HOME_DESTROY')
+    this.clearTimers()
+  },
+
+  // 启动定时器
+  startTimers() {
+    this.clearTimers()
+    
+    // 时间定时器：每1秒更新时间
+    this.timeTimer = setInterval(() => {
+      this.updateTime()
+    }, 1000)
+    
+    // 课程状态定时器：每30秒更新课程状态
+    this.courseTimer = setInterval(() => {
+      this.updateCourseStatus()
+    }, 30000)
+    
+    // 考试倒计时定时器：每60秒更新考试倒计时
+    this.examTimer = setInterval(() => {
+      this.updateExamCountdown()
+    }, 60000)
+    
+    perfLog('TIMERS_STARTED (1s time, 30s course, 60s exam)')
+  },
+
+  // 清理定时器
+  clearTimers() {
+    if (this.timeTimer) {
+      clearInterval(this.timeTimer)
+      this.timeTimer = null
+    }
+    if (this.courseTimer) {
+      clearInterval(this.courseTimer)
+      this.courseTimer = null
+    }
+    if (this.examTimer) {
+      clearInterval(this.examTimer)
+      this.examTimer = null
+    }
+    if (this.debugClickTimer) {
+      clearTimeout(this.debugClickTimer)
+      this.debugClickTimer = null
     }
   },
 
@@ -412,8 +466,44 @@ export default {
     this.currentDate = formatFullDate(now)
   },
 
-  updateStatus() {
-    perfLog('UPDATE_STATUS_START')
+  // 更新静态摘要：考试和待办（仅在 onShow 时调用）
+  updateStaticSummary() {
+    perfLog('UPDATE_STATIC_SUMMARY_START')
+    const now = getNow(DEBUG_NOW)
+
+    // 考试信息
+    const nearestExamStart = Date.now()
+    const nearestExam = getNearestExam(now)
+    this.nearestExam = nearestExam
+    this.currentExam = nearestExam  // 保存当前考试对象用于轻量刷新
+    if (nearestExam) {
+      this.examCountdown = getExamCountdown(nearestExam, now)
+    } else {
+      // 没有考试时重置
+      this.examCountdown = { value: 0, unit: '', status: '', isOngoing: false, remainingMinutes: 0 }
+    }
+    this.examSummary = getExamSummary(now)
+    perfLog('getNearestExam+getExamSummary: ' + (Date.now() - nearestExamStart) + 'ms, count:' + this.examSummary.count)
+
+    // 待办信息
+    const taskSummaryStart = Date.now()
+    this.taskSummary = getTaskSummary(now)
+    perfLog('getTaskSummary: ' + (Date.now() - taskSummaryStart) + 'ms, total:' + this.taskSummary.totalCount)
+
+    perfLog('UPDATE_STATIC_SUMMARY_END')
+  },
+
+  // 轻量刷新考试倒计时（每60秒调用，不重新查询考试列表）
+  updateExamCountdown() {
+    if (this.currentExam) {
+      const now = getNow(DEBUG_NOW)
+      this.examCountdown = getExamCountdown(this.currentExam, now)
+    }
+  },
+
+  // 更新课程状态（每30秒调用）
+  updateCourseStatus() {
+    perfLog('UPDATE_COURSE_STATUS_START')
     const now = getNow(DEBUG_NOW)
 
     // 获取当前课程
@@ -441,21 +531,6 @@ export default {
     const todayCourses = getTodayCourses(now)
     perfLog('getTodayCourses: ' + (Date.now() - todayCoursesStart) + 'ms')
 
-    // 考试信息
-    const nearestExamStart = Date.now()
-    const nearestExam = getNearestExam(now)
-    this.nearestExam = nearestExam
-    if (nearestExam) {
-      this.examCountdown = getExamCountdown(nearestExam, now)
-    }
-    this.examSummary = getExamSummary(now)
-    perfLog('getNearestExam+getExamSummary: ' + (Date.now() - nearestExamStart) + 'ms')
-
-    // 待办信息
-    const taskSummaryStart = Date.now()
-    this.taskSummary = getTaskSummary(now)
-    perfLog('getTaskSummary: ' + (Date.now() - taskSummaryStart) + 'ms')
-
     // 今日课程数量
     this.todayCourseCount = todayCourses.length
 
@@ -481,7 +556,7 @@ export default {
       this.mainCardClass = ''
       if (nextAcross) {
         this.nextCourse = nextAcross.course
-        if (nextAcross.daysLater === 0) {
+        if (nextAcross.daysLater === 1) {
           this.nextCourseLabel = '明天第一节'
         } else {
           const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
@@ -499,7 +574,7 @@ export default {
       this.mainCardClass = ''
     }
     
-    perfLog('UPDATE_STATUS_END')
+    perfLog('UPDATE_COURSE_STATUS_END')
   },
 
   goToCourseDetail() {

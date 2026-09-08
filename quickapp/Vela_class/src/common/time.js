@@ -69,10 +69,17 @@ export function parseTimeToDate(timeStr, baseDate) {
 /**
  * 解析日期时间字符串
  * @param {string} dateTimeStr 格式：YYYY-MM-DDTHH:MM:SS
- * @returns {Date}
+ * @returns {Date|null} 解析失败返回 null
  */
 export function parseDateTime(dateTimeStr) {
-  return new Date(dateTimeStr)
+  if (!dateTimeStr) {
+    return null
+  }
+  const date = new Date(dateTimeStr)
+  if (isNaN(date.getTime())) {
+    return null
+  }
+  return date
 }
 
 /**
@@ -168,6 +175,9 @@ export function getWeekdayNumber(date) {
  * @returns {boolean}
  */
 export function isToday(date, now) {
+  if (!date || !now) {
+    return false
+  }
   return date.getFullYear() === now.getFullYear() &&
     date.getMonth() === now.getMonth() &&
     date.getDate() === now.getDate()

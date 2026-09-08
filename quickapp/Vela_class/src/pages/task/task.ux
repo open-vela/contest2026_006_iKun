@@ -5,8 +5,13 @@
       <text class="title">待办</text>
     </div>
 
+    <!-- 加载状态 -->
+    <div if="{{ !isInitialized }}" class="loading-container">
+      <text class="loading-text">加载中...</text>
+    </div>
+
     <!-- 操作栏 -->
-    <div class="action-row">
+    <div if="{{ isInitialized }}" class="action-row">
       <text class="action-text">待处理 · {{ pendingCount }}项</text>
       <div class="add-btn" onclick="goToAddTask">
         <text class="add-text">+</text>
@@ -14,7 +19,7 @@
     </div>
 
     <!-- 可滚动区域 -->
-    <scroll class="task-scroll" scroll-y="true" bounces="true">
+    <scroll if="{{ isInitialized }}" class="task-scroll" scroll-y="true" bounces="true">
 
       <!-- 已逾期待办 -->
       <div if="{{ overdueTasks.length > 0 }}" class="section">
@@ -118,6 +123,17 @@
   width: 466px;
   height: 466px;
   padding-top: 45px;
+}
+
+.loading-container {
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+}
+
+.loading-text {
+  font-size: 16px;
+  color: #8F8F8F;
 }
 
 .header {
@@ -277,13 +293,14 @@
 <script>
 import router from '@system.router'
 import { getOverdueTasks, getTodayTasks, getWeekTasks, getFutureTasks, getFinishedTasks, getTaskCountdown, formatTaskCountdown, toggleTaskStatus } from '../../common/task'
-import { getTasks, ensureStorageReady, refreshTasksFromStorage } from '../../common/storage'
+import { getTasks, ensureStorageReady, refreshTasksFromStorage, syncMockDataSetting } from '../../common/storage'
 import { getNow, parseDateTime } from '../../common/time'
 
 const DEBUG_NOW = null
 
 export default {
   private: {
+    isInitialized: false,
     overdueTasks: [],
     todayTasks: [],
     weekTasks: [],
@@ -295,18 +312,24 @@ export default {
 
   onInit() {
     ensureStorageReady()
+      .then(() => syncMockDataSetting())
       .then(() => refreshTasksFromStorage())
       .then(() => {
         this.loadTasks()
+        this.isInitialized = true
       })
       .catch((err) => {
         console.error('Failed to initialize storage:', err)
         this.loadTasks()
+        this.isInitialized = true
       })
   },
 
   onShow() {
+    if (!this.isInitialized) return
+    
     ensureStorageReady()
+      .then(() => syncMockDataSetting())
       .then(() => refreshTasksFromStorage())
       .then(() => {
         this.loadTasks()

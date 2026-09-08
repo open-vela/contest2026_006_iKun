@@ -42,15 +42,27 @@ export function getTodayTasks(now) {
 }
 
 /**
+ * 获取本周结束日期（周日 23:59:59.999）
+ * @param {Date} now
+ * @returns {Date}
+ */
+function getWeekEnd(now) {
+  const weekEnd = new Date(now)
+  // 将 JavaScript 的周日=0 转换为业务中的周日=7
+  const day = weekEnd.getDay() === 0 ? 7 : weekEnd.getDay()
+  weekEnd.setDate(weekEnd.getDate() + (7 - day))
+  weekEnd.setHours(23, 59, 59, 999)
+  return weekEnd
+}
+
+/**
  * 获取本周待办（本周内、非今天、未过期、未完成）
  * @param {Date} now
  * @returns {Array}
  */
 export function getWeekTasks(now) {
   const tasks = getTasks()
-  const weekEnd = new Date(now)
-  weekEnd.setDate(weekEnd.getDate() + (7 - weekEnd.getDay()))
-  weekEnd.setHours(23, 59, 59, 999)
+  const weekEnd = getWeekEnd(now)
 
   return tasks.filter(t => {
     if (t.finished) return false
@@ -66,9 +78,7 @@ export function getWeekTasks(now) {
  */
 export function getFutureTasks(now) {
   const tasks = getTasks()
-  const weekEnd = new Date(now)
-  weekEnd.setDate(weekEnd.getDate() + (7 - weekEnd.getDay()))
-  weekEnd.setHours(23, 59, 59, 999)
+  const weekEnd = getWeekEnd(now)
 
   return tasks.filter(t => {
     if (t.finished) return false

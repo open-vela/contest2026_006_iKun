@@ -167,7 +167,7 @@ export const exams = [
   {
     id: 'exam_001',
     course: '数据结构',
-    date: '2026-09-05',
+    date: '2026-09-09',
     startTime: '09:00',
     endTime: '11:00',
     classroom: '教三楼501'
@@ -175,7 +175,7 @@ export const exams = [
   {
     id: 'exam_002',
     course: '大学英语',
-    date: '2026-09-10',
+    date: '2026-09-13',
     startTime: '14:00',
     endTime: '16:00',
     classroom: '教二401'
@@ -183,7 +183,7 @@ export const exams = [
   {
     id: 'exam_003',
     course: '操作系统',
-    date: '2026-09-15',
+    date: '2026-09-20',
     startTime: '09:00',
     endTime: '11:00',
     classroom: '教四205'
@@ -196,7 +196,7 @@ export const tasks = [
     id: 'task_001',
     title: '实验三：二叉树',
     course: '数据结构',
-    deadline: '2026-08-30T23:59:00',
+    deadline: '2026-09-06T23:59:00',
     type: 'experiment',
     finished: false
   },
@@ -204,7 +204,7 @@ export const tasks = [
     id: 'task_002',
     title: '英语作文',
     course: '大学英语',
-    deadline: '2026-08-29T22:00:00',
+    deadline: '2026-09-08T22:00:00',
     type: 'homework',
     finished: false
   },
@@ -212,7 +212,7 @@ export const tasks = [
     id: 'task_003',
     title: '操作系统报告',
     course: '操作系统',
-    deadline: '2026-09-05T18:00:00',
+    deadline: '2026-09-09T18:00:00',
     type: 'report',
     finished: false
   },
@@ -220,7 +220,7 @@ export const tasks = [
     id: 'task_004',
     title: '数据库实验四',
     course: '数据库原理',
-    deadline: '2026-08-28T23:59:00',
+    deadline: '2026-09-12T23:59:00',
     type: 'experiment',
     finished: false
   },
@@ -228,7 +228,7 @@ export const tasks = [
     id: 'task_005',
     title: '网络编程作业',
     course: '计算机网络',
-    deadline: '2026-09-03T23:59:00',
+    deadline: '2026-09-13T23:59:00',
     type: 'homework',
     finished: false
   },
@@ -244,7 +244,7 @@ export const tasks = [
     id: 'task_007',
     title: 'Python爬虫作业',
     course: 'Python程序设计',
-    deadline: '2026-08-28T23:59:00',
+    deadline: '2026-09-09T23:59:00',
     type: 'homework',
     finished: false
   },

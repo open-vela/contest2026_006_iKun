@@ -1,0 +1,240 @@
+<template>
+  <div class="page">
+    <!-- 顶部标题 -->
+    <div class="header">
+      <text class="title">历史考试</text>
+    </div>
+
+    <!-- 加载状态 -->
+    <div if="{{ !isInitialized }}" class="loading-container">
+      <text class="loading-text">加载中...</text>
+    </div>
+
+    <!-- 操作栏 -->
+    <div if="{{ isInitialized }}" class="action-row">
+      <text class="action-text">已结束 · {{ examList.length }}场</text>
+    </div>
+
+    <!-- 可滚动区域 -->
+    <scroll if="{{ isInitialized }}" class="exam-scroll" scroll-y="true" bounces="true">
+
+      <!-- 考试列表 -->
+      <div if="{{ examList.length > 0 }}" class="exam-list">
+        <div for="{{ examList }}" class="exam-item" onclick="goToDetail($item.id)">
+          <div class="exam-main">
+            <text class="exam-name">{{ $item.course }}</text>
+            <text class="exam-time">{{ $item.dateText }} · {{ $item.startTime }}-{{ $item.endTime }}</text>
+            <text class="exam-place">{{ $item.classroom }}</text>
+          </div>
+          <div class="exam-status-badge">
+            <text class="status-text">已结束</text>
+          </div>
+        </div>
+      </div>
+
+      <!-- 空状态 -->
+      <div if="{{ examList.length === 0 }}" class="empty">
+        <text class="empty-text">暂无历史考试</text>
+      </div>
+
+      <!-- 底部安全空间 -->
+      <div class="bottom-safe-space"></div>
+
+    </scroll>
+  </div>
+</template>
+
+<style>
+.page {
+  flex-direction: column;
+  align-items: center;
+  background-color: #000000;
+  width: 466px;
+  height: 466px;
+  padding-top: 45px;
+}
+
+.loading-container {
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+}
+
+.loading-text {
+  font-size: 16px;
+  color: #8F8F8F;
+}
+
+.header {
+  margin-bottom: 8px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.action-row {
+  width: 260px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.action-text {
+  font-size: 15px;
+  color: #8F8F8F;
+}
+
+.exam-scroll {
+  width: 400px;
+  height: 350px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.exam-list {
+  width: 380px;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.exam-item {
+  flex-direction: row;
+  align-items: center;
+  background-color: #171717;
+  border-radius: 20px;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  padding: 15px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+  min-height: 80px;
+}
+
+.exam-main {
+  flex: 1;
+  flex-direction: column;
+}
+
+.exam-name {
+  font-size: 20px;
+  font-weight: 600;
+  color: #FFFFFF;
+  margin-bottom: 6px;
+}
+
+.exam-time {
+  font-size: 15px;
+  color: #CFCFCF;
+  margin-bottom: 4px;
+}
+
+.exam-place {
+  font-size: 14px;
+  color: #8F8F8F;
+}
+
+.exam-status-badge {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+  background-color: rgba(128, 128, 128, 0.15);
+  flex-shrink: 0;
+  margin-left: 10px;
+}
+
+.status-text {
+  font-size: 12px;
+  color: #8F8F8F;
+}
+
+.empty {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100px;
+  flex-shrink: 0;
+}
+
+.empty-text {
+  font-size: 18px;
+  color: #8F8F8F;
+}
+
+.bottom-safe-space {
+  width: 380px;
+  height: 80px;
+  flex-shrink: 0;
+}
+</style>
+
+<script>
+import router from '@system.router'
+import { getHistoryExams, formatExamDate } from '../../common/exam'
+import { getNow } from '../../common/time'
+import { ensureStorageReady, refreshExamsFromStorage, syncMockDataSetting } from '../../common/storage'
+
+const DEBUG_NOW = null
+
+export default {
+  private: {
+    isInitialized: false,
+    examList: []
+  },
+
+  onInit() {
+    ensureStorageReady()
+      .then(() => syncMockDataSetting())
+      .then(() => refreshExamsFromStorage())
+      .then(() => {
+        this.loadExams()
+        this.isInitialized = true
+      })
+      .catch((err) => {
+        console.error('Failed to initialize storage on exam-history:', err)
+        this.loadExams()
+        this.isInitialized = true
+      })
+  },
+
+  onShow() {
+    if (!this.isInitialized) return
+    
+    ensureStorageReady()
+      .then(() => syncMockDataSetting())
+      .then(() => refreshExamsFromStorage())
+      .then(() => {
+        this.loadExams()
+      })
+      .catch((err) => {
+        console.error('Failed to refresh history exams:', err)
+        this.loadExams()
+      })
+  },
+
+  loadExams() {
+    const now = getNow(DEBUG_NOW)
+
+    // 获取历史考试
+    const exams = getHistoryExams(now)
+    this.examList = exams.map(e => ({
+      ...e,
+      dateText: formatExamDate(e).split(' · ')[0]
+    }))
+  },
+
+  goToDetail(examId) {
+    router.push({
+      uri: '/pages/exam-detail',
+      params: {
+        examId: examId
+      }
+    })
+  }
+}
+</script>

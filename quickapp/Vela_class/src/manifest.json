@@ -59,6 +59,9 @@
       "pages/exam-detail": {
         "component": "exam-detail"
       },
+      "pages/exam-history": {
+        "component": "exam-history"
+      },
       "pages/task-add": {
         "component": "task-add"
       },

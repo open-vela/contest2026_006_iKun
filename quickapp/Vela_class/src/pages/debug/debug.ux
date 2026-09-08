@@ -6,23 +6,34 @@
     </div>
 
     <!-- 内容区域 -->
-    <div class="content">
-      <text class="desc">此页面用于开发调试，可重置测试数据。</text>
+    <scroll class="content-scroll" scroll-y="true" bounces="true">
+      <div class="content">
+        <text class="desc">此页面用于开发调试和数据管理。</text>
 
-      <!-- 重置按钮 -->
-      <div class="btn-reset" onclick="resetData">
-        <text class="btn-text">重置测试数据</text>
+        <!-- 默认演示数据开关 -->
+        <div class="setting-item">
+          <div class="setting-info">
+            <text class="setting-title">默认演示数据</text>
+            <text class="setting-desc">用于调试和比赛展示</text>
+          </div>
+          <switch class="setting-switch" checked="{{ useMockData }}" onchange="onMockDataChange"></switch>
+        </div>
+
+        <!-- 重新加载按钮 -->
+        <div class="btn-reset" onclick="reloadData">
+          <text class="btn-text">重新加载默认数据</text>
+        </div>
+
+        <!-- 提示信息 -->
+        <text if="{{ message }}" class="message">{{ message }}</text>
+
+        <div class="info-section">
+          <text class="info-title">说明</text>
+          <text class="info-text">重新加载默认数据：更新Mock数据缓存，不影响开关状态。</text>
+          <text class="info-text">默认演示数据开关：控制是否显示Mock数据。</text>
+        </div>
       </div>
-
-      <!-- 提示信息 -->
-      <text if="{{ message }}" class="message">{{ message }}</text>
-
-      <div class="info-section">
-        <text class="info-title">说明</text>
-        <text class="info-text">点击重置后，课程、考试、待办数据将恢复为默认测试数据。</text>
-        <text class="info-text">用户手动添加的数据将被清除。</text>
-      </div>
-    </div>
+    </scroll>
   </div>
 </template>
 
@@ -46,17 +57,57 @@
   color: #FFFFFF;
 }
 
+.content-scroll {
+  width: 400px;
+  height: 380px;
+  flex-direction: column;
+  align-items: center;
+}
+
 .content {
   width: 380px;
   flex-direction: column;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .desc {
   font-size: 15px;
   color: #8F8F8F;
-  margin-bottom: 25px;
+  margin-bottom: 20px;
   text-align: center;
+}
+
+.setting-item {
+  width: 380px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px;
+  background-color: #171717;
+  border-radius: 16px;
+  margin-bottom: 20px;
+}
+
+.setting-info {
+  flex-direction: column;
+  flex: 1;
+}
+
+.setting-title {
+  font-size: 16px;
+  color: #FFFFFF;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.setting-desc {
+  font-size: 13px;
+  color: #8F8F8F;
+}
+
+.setting-switch {
+  color: #4FA3FF;
 }
 
 .btn-reset {
@@ -89,6 +140,7 @@
   background-color: #171717;
   border-radius: 16px;
   margin-top: 10px;
+  flex-shrink: 0;
 }
 
 .info-title {
@@ -106,22 +158,85 @@
 
 <script>
 import router from '@system.router'
-import { resetToMockData } from '../../common/storage'
+import prompt from '@system.prompt'
+import { reloadMockData, getUseMockDataFromStorage, setUseMockData, ensureStorageReady } from '../../common/storage'
 
 export default {
   private: {
-    message: ''
+    message: '',
+    useMockData: true,
+    isLoading: false,
+    isSaving: false
   },
 
-  resetData() {
-    resetToMockData()
+  onInit() {
+    this.loadMockDataSetting()
+  },
+
+  onShow() {
+    // 只在非保存状态下刷新，避免保存后的异步读取覆盖新值
+    if (!this.isSaving) {
+      this.loadMockDataSetting()
+    }
+  },
+
+  loadMockDataSetting() {
+    if (this.isLoading) return
+    this.isLoading = true
+    
+    ensureStorageReady()
+      .then(() => getUseMockDataFromStorage())
+      .then((value) => {
+        // 只在非保存状态下更新UI
+        if (!this.isSaving) {
+          this.useMockData = value
+        }
+        this.isLoading = false
+      })
+      .catch(() => {
+        this.isLoading = false
+      })
+  },
+
+  onMockDataChange(e) {
+    const newValue = e.checked
+    if (this.isSaving) return
+    
+    this.isSaving = true
+    const oldValue = this.useMockData
+    
+    setUseMockData(newValue)
       .then(() => {
-        this.message = '测试数据已重置'
-        console.log('Mock data reset successfully')
+        this.useMockData = newValue
+        this.isSaving = false
+        prompt.showToast({
+          message: newValue ? '已开启默认演示数据' : '已关闭默认演示数据',
+          duration: 2000
+        })
       })
       .catch((err) => {
-        this.message = '重置失败'
-        console.error('Failed to reset mock data:', err)
+        console.error('Failed to save mock data setting:', err)
+        this.useMockData = oldValue
+        this.isSaving = false
+        prompt.showToast({
+          message: '保存失败',
+          duration: 2000
+        })
+      })
+  },
+
+  reloadData() {
+    reloadMockData()
+      .then(() => {
+        this.message = '默认数据已重新加载'
+        prompt.showToast({
+          message: '默认数据已重新加载',
+          duration: 2000
+        })
+      })
+      .catch((err) => {
+        this.message = '重新加载失败'
+        console.error('Failed to reload mock data:', err)
       })
   },
 

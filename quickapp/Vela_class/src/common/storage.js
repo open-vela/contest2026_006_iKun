@@ -17,7 +17,8 @@ const STORAGE_KEYS = {
   COURSES: 'campus_courses',
   EXAMS: 'campus_exams',
   TASKS: 'campus_tasks',
-  SEMESTER_START: 'campus_semester_start'
+  SEMESTER_START: 'campus_semester_start',
+  DEBUG_USE_MOCK_DATA: 'debug_use_mock_data'
 }
 
 // 内存缓存
@@ -25,8 +26,38 @@ let courseCache = []
 let examCache = []
 let taskCache = []
 let semesterWeek1StartCache = null // 学期第一周周一日期字符串 YYYY-MM-DD
+let useMockDataCache = true // 默认启用Mock数据
 let storageReady = false
 let initPromise = null
+
+/**
+ * 同步Mock数据设置状态
+ * 从Storage读取最新状态并更新缓存
+ * @returns {Promise<boolean>}
+ */
+export function syncMockDataSetting() {
+  return new Promise((resolve) => {
+    storage.get({
+      key: STORAGE_KEYS.DEBUG_USE_MOCK_DATA,
+      success: function (data) {
+        // 只有明确读取到 'true' 或 'false' 时才更新缓存
+        if (data === 'true') {
+          useMockDataCache = true
+        } else if (data === 'false') {
+          useMockDataCache = false
+        }
+        // 其他情况（空值、异常值）保持当前缓存状态
+        console.log('[DEBUG] syncMockDataSetting:', useMockDataCache, '(raw:', data, ')')
+        resolve(useMockDataCache)
+      },
+      fail: function () {
+        // 读取失败时保持当前状态，不改变用户设置
+        console.log('[DEBUG] syncMockDataSetting fail,保持当前状态:', useMockDataCache)
+        resolve(useMockDataCache)
+      }
+    })
+  })
+}
 
 /**
  * 初始化存储（单例）
@@ -50,7 +81,7 @@ export function initStorage() {
 
   initPromise = new Promise((resolve) => {
     let loaded = 0
-    const total = 4 // 课程、考试、任务、学期设置
+    const total = 5 // Mock设置、课程、考试、任务、学期设置
     const startTime = Date.now()
 
     const checkComplete = () => {
@@ -65,6 +96,27 @@ export function initStorage() {
       }
     }
 
+    // 读取Mock数据设置（必须在课程、考试、任务之前完成）
+    perfLog('MOCK_SETTING_GET_START')
+    storage.get({
+      key: STORAGE_KEYS.DEBUG_USE_MOCK_DATA,
+      success: function (data) {
+        if (data === 'true') {
+          useMockDataCache = true
+        } else if (data === 'false') {
+          useMockDataCache = false
+        }
+        // 首次没有设置时保持默认true
+        perfLog('MOCK_SETTING_GET_DONE (useMockData: ' + useMockDataCache + ', raw: ' + data + ')')
+        checkComplete()
+      },
+      fail: function () {
+        // 读取失败时保持当前状态（默认true）
+        perfLog('MOCK_SETTING_GET_FAIL,保持当前状态: ' + useMockDataCache)
+        checkComplete()
+      }
+    })
+
     // 读取课程
     const coursesStartTime = Date.now()
     perfLog('COURSES_GET_START')
@@ -73,18 +125,18 @@ export function initStorage() {
       success: function (data) {
         try {
           const parseStart = Date.now()
-          courseCache = data ? JSON.parse(data) : [...courses]
+          courseCache = data ? JSON.parse(data) : [] // 没有用户数据时为空数组
           perfLog('COURSES_GET_DONE (parse: ' + (Date.now() - parseStart) + 'ms, data: ' + (data ? 'exists' : 'empty') + ')')
         } catch (e) {
           console.error('Failed to parse courses:', e)
-          courseCache = [...courses]
+          courseCache = []
           perfLog('COURSES_GET_ERROR')
         }
         checkComplete()
       },
       fail: function (data, code) {
         console.error('Failed to get courses:', code)
-        courseCache = [...courses]
+        courseCache = []
         perfLog('COURSES_GET_FAIL: ' + code)
         checkComplete()
       }
@@ -98,18 +150,18 @@ export function initStorage() {
       success: function (data) {
         try {
           const parseStart = Date.now()
-          examCache = data ? JSON.parse(data) : [...exams]
+          examCache = data ? JSON.parse(data) : [] // 没有用户数据时为空数组
           perfLog('EXAMS_GET_DONE (parse: ' + (Date.now() - parseStart) + 'ms, data: ' + (data ? 'exists' : 'empty') + ')')
         } catch (e) {
           console.error('Failed to parse exams:', e)
-          examCache = [...exams]
+          examCache = []
           perfLog('EXAMS_GET_ERROR')
         }
         checkComplete()
       },
       fail: function (data, code) {
         console.error('Failed to get exams:', code)
-        examCache = [...exams]
+        examCache = []
         perfLog('EXAMS_GET_FAIL: ' + code)
         checkComplete()
       }
@@ -123,28 +175,19 @@ export function initStorage() {
       success: function (data) {
         try {
           const parseStart = Date.now()
-          taskCache = data ? JSON.parse(data) : [...tasks]
+          taskCache = data ? JSON.parse(data) : [] // 没有用户数据时为空数组
           perfLog('TASKS_GET_DONE (parse: ' + (Date.now() - parseStart) + 'ms, data: ' + (data ? 'exists' : 'empty') + ')')
         } catch (e) {
           console.error('Failed to parse tasks:', e)
-          taskCache = [...tasks]
+          taskCache = []
           perfLog('TASKS_GET_ERROR')
-        }
-        // 如果是首次运行（没有存储数据），写入 Mock 数据
-        if (!data) {
-          perfLog('TASKS_SAVE_DEFAULT_START')
-          saveTasksToStorage()
-          perfLog('TASKS_SAVE_DEFAULT_END')
         }
         checkComplete()
       },
       fail: function (data, code) {
         console.error('Failed to get tasks:', code)
-        taskCache = [...tasks]
+        taskCache = []
         perfLog('TASKS_GET_FAIL: ' + code)
-        perfLog('TASKS_SAVE_DEFAULT_START (fail)')
-        saveTasksToStorage()
-        perfLog('TASKS_SAVE_DEFAULT_END (fail)')
         checkComplete()
       }
     })
@@ -204,6 +247,13 @@ function saveTasksToStorage() {
  * @returns {Array}
  */
 export function getCourses() {
+  console.log('[DEBUG] getCourses useMockDataCache:', useMockDataCache)
+  if (useMockDataCache) {
+    // 合并默认数据和用户数据，去重
+    const userCourseIds = courseCache.map(c => c.id)
+    const mockCourses = courses.filter(c => !userCourseIds.includes(c.id))
+    return [...mockCourses, ...courseCache]
+  }
   return courseCache
 }
 
@@ -212,6 +262,13 @@ export function getCourses() {
  * @returns {Array}
  */
 export function getExams() {
+  console.log('[DEBUG] getExams useMockDataCache:', useMockDataCache)
+  if (useMockDataCache) {
+    // 合并默认数据和用户数据，去重
+    const userExamIds = examCache.map(e => e.id)
+    const mockExams = exams.filter(e => !userExamIds.includes(e.id))
+    return [...mockExams, ...examCache]
+  }
   return examCache
 }
 
@@ -220,7 +277,60 @@ export function getExams() {
  * @returns {Array}
  */
 export function getTasks() {
+  console.log('[DEBUG] getTasks useMockDataCache:', useMockDataCache)
+  if (useMockDataCache) {
+    // 合并默认数据和用户数据，去重
+    const userTaskIds = taskCache.map(t => t.id)
+    const mockTasks = tasks.filter(t => !userTaskIds.includes(t.id))
+    return [...mockTasks, ...taskCache]
+  }
   return taskCache
+}
+
+/**
+ * 获取是否使用默认Mock数据
+ * @returns {boolean}
+ */
+export function getUseMockData() {
+  return useMockDataCache
+}
+
+/**
+ * 从Storage读取是否使用默认Mock数据
+ * 与 syncMockDataSetting 复用同一套逻辑
+ * @returns {Promise<boolean>}
+ */
+export function getUseMockDataFromStorage() {
+  return syncMockDataSetting()
+}
+
+/**
+ * 设置是否使用默认Mock数据
+ * @param {boolean} useMock
+ * @returns {Promise}
+ */
+export function setUseMockData(useMock) {
+  return new Promise((resolve, reject) => {
+    const oldValue = useMockDataCache
+    console.log('[DEBUG] setUseMockData start, old:', oldValue, 'new:', useMock)
+    
+    storage.set({
+      key: STORAGE_KEYS.DEBUG_USE_MOCK_DATA,
+      value: String(useMock),
+      success: function () {
+        // 保存成功后才更新缓存
+        useMockDataCache = useMock
+        console.log('[DEBUG] setUseMockData success, cache updated:', useMockDataCache)
+        resolve()
+      },
+      fail: function (data, code) {
+        // 保存失败时保持原值
+        useMockDataCache = oldValue
+        console.error('[DEBUG] setUseMockData fail, cache restored:', useMockDataCache, 'code:', code)
+        reject(new Error('Failed to save setting'))
+      }
+    })
+  })
 }
 
 /**
@@ -276,20 +386,16 @@ export function refreshTasksFromStorage() {
       key: STORAGE_KEYS.TASKS,
       success: function (data) {
         try {
-          // 没有持久化数据时使用默认 mock 数据
-          const parsed = data ? JSON.parse(data) : [...tasks]
-          // 生成新的数组和对象，避免引用旧对象
+          const parsed = data ? JSON.parse(data) : []
           taskCache = parsed.map(task => ({ ...task }))
           resolve(taskCache)
         } catch (e) {
           console.error('Failed to parse tasks on refresh:', e)
-          // 读取失败时保留当前缓存
           resolve(taskCache)
         }
       },
       fail: function (data, code) {
         console.error('Failed to refresh tasks from storage:', code)
-        // 读取失败时保留当前缓存
         resolve(taskCache)
       }
     })
@@ -306,20 +412,16 @@ export function refreshExamsFromStorage() {
       key: STORAGE_KEYS.EXAMS,
       success: function (data) {
         try {
-          // 没有持久化数据时使用默认 mock 数据
-          const parsed = data ? JSON.parse(data) : [...exams]
-          // 生成新的数组和对象，避免引用旧对象
+          const parsed = data ? JSON.parse(data) : []
           examCache = parsed.map(exam => ({ ...exam }))
           resolve(examCache)
         } catch (e) {
           console.error('Failed to parse exams on refresh:', e)
-          // 读取失败时保留当前缓存
           resolve(examCache)
         }
       },
       fail: function (data, code) {
         console.error('Failed to refresh exams from storage:', code)
-        // 读取失败时保留当前缓存
         resolve(examCache)
       }
     })
@@ -336,20 +438,16 @@ export function refreshCoursesFromStorage() {
       key: STORAGE_KEYS.COURSES,
       success: function (data) {
         try {
-          // 没有持久化数据时使用默认 mock 数据
-          const parsed = data ? JSON.parse(data) : [...courses]
-          // 生成新的数组和对象，避免引用旧对象
+          const parsed = data ? JSON.parse(data) : []
           courseCache = parsed.map(course => ({ ...course }))
           resolve(courseCache)
         } catch (e) {
           console.error('Failed to parse courses on refresh:', e)
-          // 读取失败时保留当前缓存
           resolve(courseCache)
         }
       },
       fail: function (data, code) {
         console.error('Failed to refresh courses from storage:', code)
-        // 读取失败时保留当前缓存
         resolve(courseCache)
       }
     })
@@ -658,59 +756,17 @@ export function deleteTask(taskId) {
 }
 
 /**
- * 重置为 Mock 数据（调试用）
- * 同时更新内存缓存和 Storage
+ * 重新加载默认Mock数据（调试用）
+ * 只清理Mock数据缓存，不修改用户数据和开关状态
  * @returns {Promise}
  */
-export function resetToMockData() {
-  return new Promise((resolve, reject) => {
-    // 1. 从 data.js 加载默认数据并深拷贝
-    const defaultCourses = courses.map(c => ({ ...c }))
-    const defaultExams = exams.map(e => ({ ...e }))
-    const defaultTasks = tasks.map(t => ({ ...t }))
-
-    // 2. 更新内存缓存
-    courseCache = defaultCourses
-    examCache = defaultExams
-    taskCache = defaultTasks
-
-    let saved = 0
-    let hasError = false
-    const total = 3
-
-    const checkComplete = (success) => {
-      if (!success) hasError = true
-      saved++
-      if (saved >= total) {
-        if (hasError) {
-          reject(new Error('Failed to save some data'))
-        } else {
-          resolve()
-        }
-      }
-    }
-
-    // 3. 保存到 Storage
-    storage.set({
-      key: STORAGE_KEYS.COURSES,
-      value: JSON.stringify(courseCache),
-      success: () => checkComplete(true),
-      fail: () => checkComplete(false)
-    })
-
-    storage.set({
-      key: STORAGE_KEYS.EXAMS,
-      value: JSON.stringify(examCache),
-      success: () => checkComplete(true),
-      fail: () => checkComplete(false)
-    })
-
-    storage.set({
-      key: STORAGE_KEYS.TASKS,
-      value: JSON.stringify(taskCache),
-      success: () => checkComplete(true),
-      fail: () => checkComplete(false)
-    })
+export function reloadMockData() {
+  return new Promise((resolve) => {
+    // 重新加载时，不需要做任何操作
+    // 因为 getCourses/getExams/getTasks 会动态合并 Mock 数据
+    // 只需要确保下次读取时使用最新的 Mock 数据即可
+    console.log('Mock data cache will be refreshed on next read')
+    resolve()
   })
 }
 
@@ -749,6 +805,10 @@ export function refreshSemesterStartFromStorage() {
  */
 export function setSemesterWeek1Start(dateStr) {
   return new Promise((resolve, reject) => {
+    // 保存旧值用于回滚
+    const oldValue = semesterWeek1StartCache
+
+    // 先更新缓存
     semesterWeek1StartCache = dateStr
 
     storage.set({
@@ -759,6 +819,8 @@ export function setSemesterWeek1Start(dateStr) {
         resolve()
       },
       fail: function (data, code) {
+        // 写入失败，恢复旧缓存
+        semesterWeek1StartCache = oldValue
         console.error('Failed to save semester start:', code)
         reject(new Error('Failed to save semester start'))
       }

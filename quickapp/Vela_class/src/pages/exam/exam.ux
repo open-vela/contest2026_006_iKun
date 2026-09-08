@@ -5,16 +5,26 @@
       <text class="title">考试</text>
     </div>
 
+    <!-- 加载状态 -->
+    <div if="{{ !isInitialized }}" class="loading-container">
+      <text class="loading-text">加载中...</text>
+    </div>
+
     <!-- 操作栏 -->
-    <div class="action-row">
+    <div if="{{ isInitialized }}" class="action-row">
       <text class="action-text">近期考试 · {{ examList.length }}场</text>
-      <div class="add-btn" onclick="goToAddExam">
-        <text class="add-text">+</text>
+      <div class="action-btns">
+        <div class="history-btn" onclick="goToHistory">
+          <text class="history-text">历史</text>
+        </div>
+        <div class="add-btn" onclick="goToAddExam">
+          <text class="add-text">+</text>
+        </div>
       </div>
     </div>
 
     <!-- 可滚动区域 -->
-    <scroll class="exam-scroll" scroll-y="true" bounces="true">
+    <scroll if="{{ isInitialized }}" class="exam-scroll" scroll-y="true" bounces="true">
 
       <!-- 考试列表 -->
       <div if="{{ examList.length > 0 }}" class="exam-list">
@@ -53,6 +63,17 @@
   padding-top: 45px;
 }
 
+.loading-container {
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+}
+
+.loading-text {
+  font-size: 16px;
+  color: #8F8F8F;
+}
+
 .header {
   margin-bottom: 8px;
 }
@@ -64,7 +85,7 @@
 }
 
 .action-row {
-  width: 260px;
+  width: 300px;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
@@ -73,6 +94,27 @@
 
 .action-text {
   font-size: 15px;
+  color: #8F8F8F;
+}
+
+.action-btns {
+  flex-direction: row;
+  align-items: center;
+}
+
+.history-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  background-color: #2B2B2B;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+}
+
+.history-text {
+  font-size: 12px;
   color: #8F8F8F;
 }
 
@@ -187,29 +229,36 @@
 import router from '@system.router'
 import { getUpcomingExams, getExamCountdown, formatExamDate } from '../../common/exam'
 import { getNow } from '../../common/time'
-import { ensureStorageReady, refreshExamsFromStorage } from '../../common/storage'
+import { ensureStorageReady, refreshExamsFromStorage, syncMockDataSetting } from '../../common/storage'
 
 const DEBUG_NOW = null
 
 export default {
   private: {
+    isInitialized: false,
     examList: []
   },
 
   onInit() {
     ensureStorageReady()
+      .then(() => syncMockDataSetting())
       .then(() => refreshExamsFromStorage())
       .then(() => {
         this.loadExams()
+        this.isInitialized = true
       })
       .catch((err) => {
         console.error('Failed to initialize storage on exam:', err)
         this.loadExams()
+        this.isInitialized = true
       })
   },
 
   onShow() {
+    if (!this.isInitialized) return
+    
     ensureStorageReady()
+      .then(() => syncMockDataSetting())
       .then(() => refreshExamsFromStorage())
       .then(() => {
         this.loadExams()
@@ -235,6 +284,12 @@ export default {
   goToAddExam() {
     router.push({
       uri: '/pages/exam-add'
+    })
+  },
+
+  goToHistory() {
+    router.push({
+      uri: '/pages/exam-history'
     })
   },
 

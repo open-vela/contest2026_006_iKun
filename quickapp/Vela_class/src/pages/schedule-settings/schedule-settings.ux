@@ -179,7 +179,7 @@ export default {
     week1SundayText: '',
     dateOptions: [],
     dateValues: [],
-    selectedDateIndex: 14, // 默认选择约第15项（中间位置）
+    selectedDateIndex: 0, // 安全初始值，后续根据实际情况计算
     previewMonday: '',
     previewSunday: ''
   },
@@ -196,8 +196,8 @@ export default {
     const values = []
     const now = new Date()
 
-    // 生成过去30天到未来120天的日期选项
-    for (let i = -30; i <= 120; i++) {
+    // 生成过去180天到未来180天的日期选项
+    for (let i = -180; i <= 180; i++) {
       const date = new Date(now)
       date.setDate(date.getDate() + i)
       const year = date.getFullYear()
@@ -211,6 +211,16 @@ export default {
 
     this.dateOptions = options
     this.dateValues = values
+
+    // 计算今天的索引作为默认值
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    const todayStr = `${year}-${month}-${day}`
+    const todayIndex = this.dateValues.indexOf(todayStr)
+    if (todayIndex !== -1) {
+      this.selectedDateIndex = todayIndex
+    }
   },
 
   loadCurrentSetting() {
@@ -224,6 +234,7 @@ export default {
       if (idx !== -1) {
         this.selectedDateIndex = idx
       }
+      // 如果已保存的日期不在范围内，保持今天的默认值
     }
   },
 

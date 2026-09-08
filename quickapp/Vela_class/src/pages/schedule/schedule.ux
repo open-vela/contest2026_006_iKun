@@ -8,8 +8,13 @@
       </div>
     </div>
 
+    <!-- 加载状态 -->
+    <div if="{{ !isInitialized }}" class="loading-container">
+      <text class="loading-text">加载中...</text>
+    </div>
+
     <!-- 模式切换 + 添加按钮 -->
-    <div class="mode-row">
+    <div if="{{ isInitialized }}" class="mode-row">
       <div class="mode-switch">
         <div class="mode-btn {{ mode === 'today' ? 'mode-active' : '' }}" onclick="switchMode('today')">
           <text class="mode-text {{ mode === 'today' ? 'mode-text-active' : '' }}">今天</text>
@@ -27,7 +32,7 @@
     </div>
 
     <!-- 今日模式 -->
-    <div if="{{ mode === 'today' }}" class="content">
+    <div if="{{ isInitialized && mode === 'today' }}" class="content">
       <div class="today-summary">
         <text class="week-number">{{ currentWeek > 0 ? '第' + currentWeek + '周' : '学期未开始' }}</text>
         <text class="summary-text"> · {{ todayTitle }}</text>
@@ -53,7 +58,7 @@
     </div>
 
     <!-- 本周模式 -->
-    <div if="{{ mode === 'week' }}" class="content">
+    <div if="{{ isInitialized && mode === 'week' }}" class="content">
       <!-- 周次选择器 -->
       <div class="week-selector-wrap">
         <div class="week-selector">
@@ -99,7 +104,7 @@
     </div>
 
     <!-- 全部模式 -->
-    <div if="{{ mode === 'all' }}" class="content">
+    <div if="{{ isInitialized && mode === 'all' }}" class="content">
       <!-- 星期选择器 -->
       <div class="day-selector">
         <div for="{{ weekDays }}" class="day-btn {{ selectedDay === $item.value ? 'day-active' : '' }}" onclick="selectDay($item.value)">
@@ -135,6 +140,17 @@
   width: 466px;
   height: 466px;
   padding-top: 30px;
+}
+
+.loading-container {
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+}
+
+.loading-text {
+  font-size: 16px;
+  color: #8F8F8F;
 }
 
 .header {
@@ -547,12 +563,13 @@
 import router from '@system.router'
 import { getTodayCourses, getCoursesByWeekday, getAllCoursesByWeekday, formatCourseWeeks, getCourseStatus, getCourseRemainingTime, calculateCurrentWeek } from '../../common/schedule'
 import { getNow, getWeekdayNumber } from '../../common/time'
-import { ensureStorageReady, refreshCoursesFromStorage, refreshSemesterStartFromStorage, getSemesterWeek1Start } from '../../common/storage'
+import { ensureStorageReady, refreshCoursesFromStorage, refreshSemesterStartFromStorage, getSemesterWeek1Start, syncMockDataSetting } from '../../common/storage'
 
 const DEBUG_NOW = null
 
 export default {
   private: {
+    isInitialized: false,
     mode: 'today',
     currentWeek: 1,
     selectedWeek: 1,
@@ -576,20 +593,36 @@ export default {
   },
 
   onInit() {
-    const now = getNow(DEBUG_NOW)
-    this.selectedDay = getWeekdayNumber(now)
-    this.currentWeek = calculateCurrentWeek(now)
-    // 学期未开始时，默认显示第1周
-    this.selectedWeek = this.currentWeek > 0 ? this.currentWeek : 1
+    ensureStorageReady()
+      .then(() => syncMockDataSetting())
+      .then(() => Promise.all([
+        refreshCoursesFromStorage(),
+        refreshSemesterStartFromStorage()
+      ]))
+      .then(() => {
+        const now = getNow(DEBUG_NOW)
+        this.selectedDay = getWeekdayNumber(now)
+        this.currentWeek = calculateCurrentWeek(now)
+        // 学期未开始时，默认显示第1周
+        this.selectedWeek = this.currentWeek > 0 ? this.currentWeek : 1
 
-    this.updateWeekDates(now)
-    this.loadTodayCourses(now)
-    this.loadWeekCourses(now)
-    this.loadAllCourses()
+        this.updateWeekDates(now)
+        this.loadTodayCourses(now)
+        this.loadWeekCourses(now)
+        this.loadAllCourses()
+        this.isInitialized = true
+      })
+      .catch((err) => {
+        console.error('Failed to initialize schedule:', err)
+        this.isInitialized = true
+      })
   },
 
   onShow() {
+    if (!this.isInitialized) return
+    
     ensureStorageReady()
+      .then(() => syncMockDataSetting())
       .then(() => Promise.all([
         refreshCoursesFromStorage(),
         refreshSemesterStartFromStorage()
@@ -623,12 +656,14 @@ export default {
       targetMonday = new Date(week1Monday)
       targetMonday.setDate(targetMonday.getDate() + (this.selectedWeek - 1) * 7)
     } else {
-      // 未设置学期第一周时，使用当前自然周作为备选
+      // 未设置学期第一周时，使用当前自然周作为第1周基准
       const currentWeekday = getWeekdayNumber(now)
       const mondayOffset = currentWeekday - 1
       const monday = new Date(now)
       monday.setDate(monday.getDate() - mondayOffset)
-      targetMonday = monday
+      // 增加 (selectedWeek - 1) * 7 天来计算目标周
+      targetMonday = new Date(monday)
+      targetMonday.setDate(targetMonday.getDate() + (this.selectedWeek - 1) * 7)
     }
 
     // 更新 weekDays 的日期和月份
