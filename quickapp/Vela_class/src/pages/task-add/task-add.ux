@@ -8,7 +8,7 @@
     </div>
 
     <!-- 可滚动内容区域 -->
-    <scroll class="form-scroll" scroll-y="true" bounces="true">
+    <scroll id="formScroll" class="form-scroll" scroll-y="true" bounces="true">
       <div class="content">
         <!-- 任务名称 -->
         <div class="form-group">
@@ -165,7 +165,7 @@
 }
 
 .bottom-safe-space {
-  height: 80px;
+  height: 200px;
   flex-shrink: 0;
 }
 </style>
@@ -246,6 +246,45 @@ export default {
   showKeyboard(field) {
     this.currentInputField = field
     this.keyboardHidden = false
+    // 键盘弹出后滚动到输入框可见位置
+    this._scrollToField(field)
+  },
+
+  _scrollToField(field) {
+    // title: label(~21px) + input(52px) + margin(12px) = ~85px
+    const fieldBottoms = { title: 85 }
+    const fieldBottom = fieldBottoms[field] || 0
+
+    const KEYBOARD_H = 321
+    const PAGE_H = 466
+    const SCROLL_TOP = 80
+    const visibleH = PAGE_H - KEYBOARD_H - SCROLL_TOP
+    const padding = 10
+    const needScroll = fieldBottom - visibleH + padding
+
+    const tryScroll = (attempt) => {
+      setTimeout(() => {
+        const el = this.$element('formScroll')
+        if (!el || !el.getScrollRect) return
+
+        el.getScrollRect((rect) => {
+          const maxScroll = Math.max(0, (rect.scrollHeight || 0) - (rect.height || 385))
+
+          if (maxScroll === 0 && attempt < 3) {
+            tryScroll(attempt + 1)
+            return
+          }
+
+          let scrollTo = Math.max(0, needScroll)
+          if (maxScroll > 0 && scrollTo > maxScroll) {
+            scrollTo = maxScroll
+          }
+
+          el.scrollTo({ top: scrollTo, behavior: 'instant' })
+        })
+      }, attempt === 0 ? 350 : 200)
+    }
+    tryScroll(0)
   },
 
   onComplete(evt) {
@@ -323,6 +362,12 @@ export default {
   onBackPress() {
     if (!this.keyboardHidden) {
       this.keyboardHidden = true
+      setTimeout(() => {
+        const el = this.$element('formScroll')
+        if (el && el.scrollTo) {
+          el.scrollTo({ top: 0, behavior: 'instant' })
+        }
+      }, 100)
       return true
     }
     return false
