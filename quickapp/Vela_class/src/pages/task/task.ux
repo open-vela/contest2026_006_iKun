@@ -296,8 +296,6 @@ import { getOverdueTasks, getTodayTasks, getWeekTasks, getFutureTasks, getFinish
 import { getTasks, ensureStorageReady, refreshTasksFromStorage, syncMockDataSetting } from '../../common/storage'
 import { getNow, parseDateTime } from '../../common/time'
 
-const DEBUG_NOW = null
-
 export default {
   private: {
     isInitialized: false,
@@ -341,7 +339,7 @@ export default {
   },
 
   loadTasks() {
-    const now = getNow(DEBUG_NOW)
+    const now = getNow()
 
     // 已逾期待办
     this.overdueTasks = getOverdueTasks(now).map(t => ({
@@ -387,7 +385,7 @@ export default {
 
   formatDeadline(deadline) {
     const date = parseDateTime(deadline)
-    const now = getNow(DEBUG_NOW)
+    const now = getNow()
     const hours = String(date.getHours()).padStart(2, '0')
     const minutes = String(date.getMinutes()).padStart(2, '0')
 

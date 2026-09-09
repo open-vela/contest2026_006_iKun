@@ -231,8 +231,6 @@ import { getUpcomingExams, getExamCountdown, formatExamDate } from '../../common
 import { getNow } from '../../common/time'
 import { ensureStorageReady, refreshExamsFromStorage, syncMockDataSetting } from '../../common/storage'
 
-const DEBUG_NOW = null
-
 export default {
   private: {
     isInitialized: false,
@@ -270,7 +268,7 @@ export default {
   },
 
   loadExams() {
-    const now = getNow(DEBUG_NOW)
+    const now = getNow()
 
     // 获取所有即将到来的考试
     const exams = getUpcomingExams(now)

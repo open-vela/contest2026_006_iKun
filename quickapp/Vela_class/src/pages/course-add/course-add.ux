@@ -526,12 +526,10 @@ export default {
 
     ensureStorageReady()
       .then(() => addCourse(courseData))
-      .then((newCourse) => {
-        console.log('课程添加成功:', newCourse)
+      .then(() => {
         router.back()
       })
       .catch((err) => {
-        console.error('添加课程失败:', err)
         this.showError('添加课程失败')
       })
   },

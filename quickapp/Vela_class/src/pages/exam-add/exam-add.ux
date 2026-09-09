@@ -315,11 +315,9 @@ export default {
 
     addExam(examData)
       .then(() => {
-        console.log('考试添加成功')
         router.back()
       })
       .catch((err) => {
-        console.error('添加考试失败:', err)
         this.showError('添加考试失败')
       })
   },

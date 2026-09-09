@@ -284,8 +284,6 @@ import { getCourses, ensureStorageReady, isUserCreatedCourse, deleteCourse } fro
 import { getCourseStatus, getCourseProgress, getCourseRemainingTime, getMinutesUntilStart } from '../../common/schedule'
 import { getNow } from '../../common/time'
 
-const DEBUG_NOW = null
-
 export default {
   protected: {
     courseId: '',
@@ -320,7 +318,7 @@ export default {
   },
 
   loadCourse() {
-    const now = getNow(DEBUG_NOW)
+    const now = getNow()
 
     // 从统一课程缓存中查找课程
     this.course = getCourses().find(c => c.id === this.courseId)
@@ -357,11 +355,9 @@ export default {
     this.deleting = true
     deleteCourse(this.courseId)
       .then(() => {
-        console.log('Course deleted successfully')
         router.back()
       })
       .catch((err) => {
-        console.error('Failed to delete course:', err)
         this.deleting = false
         this.deleteConfirming = false
       })

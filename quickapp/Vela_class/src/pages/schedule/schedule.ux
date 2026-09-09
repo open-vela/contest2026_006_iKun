@@ -565,8 +565,6 @@ import { getTodayCourses, getCoursesByWeekday, getAllCoursesByWeekday, formatCou
 import { getNow, getWeekdayNumber } from '../../common/time'
 import { ensureStorageReady, refreshCoursesFromStorage, refreshSemesterStartFromStorage, getSemesterWeek1Start, syncMockDataSetting } from '../../common/storage'
 
-const DEBUG_NOW = null
-
 export default {
   private: {
     isInitialized: false,
@@ -600,7 +598,7 @@ export default {
         refreshSemesterStartFromStorage()
       ]))
       .then(() => {
-        const now = getNow(DEBUG_NOW)
+        const now = getNow()
         this.selectedDay = getWeekdayNumber(now)
         this.currentWeek = calculateCurrentWeek(now)
         // 学期未开始时，默认显示第1周
@@ -628,7 +626,7 @@ export default {
         refreshSemesterStartFromStorage()
       ]))
       .then(() => {
-        const now = getNow(DEBUG_NOW)
+        const now = getNow()
         this.currentWeek = calculateCurrentWeek(now)
         // 学期未开始时，默认显示第1周
         this.selectedWeek = this.currentWeek > 0 ? this.currentWeek : 1
@@ -733,7 +731,7 @@ export default {
     if (selectedDayItem) {
       this.displayMonth = selectedDayItem.month
     }
-    const now = getNow(DEBUG_NOW)
+    const now = getNow()
     this.loadWeekCourses(now)
     this.loadAllCourses()
   },
@@ -742,7 +740,7 @@ export default {
     // 最小值为1，不能进入第0周
     if (this.selectedWeek > 1) {
       this.selectedWeek -= 1
-      const now = getNow(DEBUG_NOW)
+      const now = getNow()
       this.updateWeekDates(now)
       this.loadWeekCourses(now)
     }
@@ -751,7 +749,7 @@ export default {
   nextWeek() {
     if (this.selectedWeek < 16) {
       this.selectedWeek += 1
-      const now = getNow(DEBUG_NOW)
+      const now = getNow()
       this.updateWeekDates(now)
       this.loadWeekCourses(now)
     }

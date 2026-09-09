@@ -24,33 +24,15 @@ export function formatTime(date) {
 }
 
 /**
- * 格式化日期为 M月D日
- * @param {Date} date
- * @returns {string}
- */
-export function formatDate(date) {
-  const month = date.getMonth() + 1
-  const day = date.getDate()
-  return `${month}月${day}日`
-}
-
-/**
- * 获取星期几（中文）
- * @param {Date} date
- * @returns {string}
- */
-export function getWeekday(date) {
-  const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
-  return days[date.getDay()]
-}
-
-/**
  * 格式化完整日期：8月18日 · 周二
  * @param {Date} date
  * @returns {string}
  */
 export function formatFullDate(date) {
-  return `${formatDate(date)} · ${getWeekday(date)}`
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+  return `${month}月${day}日 · ${days[date.getDay()]}`
 }
 
 /**
@@ -90,30 +72,6 @@ export function parseDateTime(dateTimeStr) {
  */
 export function diffMinutes(start, end) {
   return Math.floor((end - start) / (1000 * 60))
-}
-
-/**
- * 计算两个时间之间的秒数差
- * @param {Date} start
- * @param {Date} end
- * @returns {number}
- */
-export function diffSeconds(start, end) {
-  return Math.floor((end - start) / 1000)
-}
-
-/**
- * 格式化剩余时间（分钟）
- * @param {number} minutes
- * @returns {string}
- */
-export function formatRemainingMinutes(minutes) {
-  if (minutes < 1) return '不足1分钟'
-  if (minutes < 60) return `${minutes}分钟`
-  const hours = Math.floor(minutes / 60)
-  const mins = minutes % 60
-  if (mins === 0) return `${hours}小时`
-  return `${hours}小时${mins}分钟`
 }
 
 /**
@@ -181,26 +139,4 @@ export function isToday(date, now) {
   return date.getFullYear() === now.getFullYear() &&
     date.getMonth() === now.getMonth() &&
     date.getDate() === now.getDate()
-}
-
-/**
- * 获取今天的开始时间
- * @param {Date} now
- * @returns {Date}
- */
-export function getTodayStart(now) {
-  const start = new Date(now)
-  start.setHours(0, 0, 0, 0)
-  return start
-}
-
-/**
- * 获取今天的结束时间
- * @param {Date} now
- * @returns {Date}
- */
-export function getTodayEnd(now) {
-  const end = new Date(now)
-  end.setHours(23, 59, 59, 999)
-  return end
 }

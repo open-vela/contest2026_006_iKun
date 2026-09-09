@@ -4,13 +4,7 @@
  */
 
 import { getExams } from './storage'
-import { formatCountdown, formatExamCountdown, parseDateTime, getNow } from './time'
-
-// 性能诊断
-const EXAM_PERF_START = Date.now()
-function perfLog(label) {
-  console.log('[PERF:EXAM]', label, '+', Date.now() - EXAM_PERF_START, 'ms')
-}
+import { formatCountdown, parseDateTime } from './time'
 
 /**
  * 获取最近的考试（优先选择进行中的考试）
@@ -21,7 +15,6 @@ function perfLog(label) {
  * @returns {object|null}
  */
 export function getNearestExam(now) {
-  perfLog('getNearestExam_START')
   const exams = getExams()
   const validExams = exams
     .filter(e => {
@@ -51,7 +44,6 @@ export function getNearestExam(now) {
       const endB = parseDateTime(`${b.date}T${b.endTime}:00`)
       return endA - endB
     })
-    perfLog('getNearestExam_END (ongoing)')
     return ongoingExams[0]
   }
 
@@ -62,9 +54,7 @@ export function getNearestExam(now) {
     return startA - startB
   })
 
-  const result = upcomingExams.length > 0 ? upcomingExams[0] : null
-  perfLog('getNearestExam_END (found: ' + !!result + ')')
-  return result
+  return upcomingExams.length > 0 ? upcomingExams[0] : null
 }
 
 /**
@@ -117,17 +107,6 @@ export function getExamCountdown(exam, now) {
 }
 
 /**
- * 获取考试精确倒计时（用于非常临近的情况）
- * @param {object} exam
- * @param {Date} now
- * @returns {string}
- */
-export function getExamPreciseCountdown(exam, now) {
-  const examDate = parseDateTime(`${exam.date}T${exam.startTime}:00`)
-  return formatExamCountdown(examDate, now)
-}
-
-/**
  * 获取考试日期格式化
  * @param {object} exam
  * @returns {string} 如：8月21日 · 09:00
@@ -143,7 +122,7 @@ export function formatExamDate(exam) {
  * 获取考试状态
  * @param {object} exam
  * @param {Date} now
- * @returns {string} 'upcoming' | 'today' | 'finished'
+ * @returns {string} 'upcoming' | 'today' | 'ongoing' | 'finished'
  */
 export function getExamStatus(exam, now) {
   const examDate = parseDateTime(`${exam.date}T${exam.startTime}:00`)
@@ -165,21 +144,17 @@ export function getExamStatus(exam, now) {
  * @returns {object} { count, nearestCourse, daysUntil }
  */
 export function getExamSummary(now) {
-  perfLog('getExamSummary_START')
   const nearest = getNearestExam(now)
   if (!nearest) {
-    perfLog('getExamSummary_END (no exam)')
     return { count: 0, nearestCourse: null, daysUntil: null }
   }
 
   const countdown = getExamCountdown(nearest, now)
-  const result = {
+  return {
     count: getUpcomingExams(now).length,
     nearestCourse: nearest.course,
     daysUntil: countdown
   }
-  perfLog('getExamSummary_END (count: ' + result.count + ')')
-  return result
 }
 
 /**
@@ -201,18 +176,4 @@ export function getHistoryExams(now) {
       const dateB = parseDateTime(`${b.date}T${b.endTime}:00`)
       return dateB - dateA
     })
-}
-
-/**
- * 格式化考试日期（详细）
- * @param {object} exam
- * @returns {string} 如：2026年9月5日
- */
-export function formatExamDateFull(exam) {
-  const date = parseDateTime(`${exam.date}T00:00:00`)
-  if (!date) return exam.date
-  const year = date.getFullYear()
-  const month = date.getMonth() + 1
-  const day = date.getDate()
-  return `${year}年${month}月${day}日`
 }

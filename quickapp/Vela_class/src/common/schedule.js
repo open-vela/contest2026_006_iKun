@@ -4,13 +4,7 @@
  */
 
 import { getCourses, getSemesterWeek1Start } from './storage'
-import { getNow, parseTimeToDate, diffMinutes, getWeekdayNumber, formatRemainingMinutes } from './time'
-
-// 性能诊断
-const SCHEDULE_PERF_START = Date.now()
-function perfLog(label) {
-  console.log('[PERF:SCHEDULE]', label, '+', Date.now() - SCHEDULE_PERF_START, 'ms')
-}
+import { getNow, parseTimeToDate, diffMinutes, getWeekdayNumber } from './time'
 
 /**
  * 获取学期第一周的周一日期
@@ -137,19 +131,6 @@ export function formatCourseWeeks(weeks) {
 }
 
 /**
- * 获取本周所有课程
- * @param {number} currentWeek 当前教学周
- * @returns {object} 按星期分组的课程
- */
-export function getWeekCourses(currentWeek = 1) {
-  const weekCourses = {}
-  for (let i = 1; i <= 7; i++) {
-    weekCourses[i] = getCoursesByWeekday(i, currentWeek)
-  }
-  return weekCourses
-}
-
-/**
  * 获取当前正在进行的课程
  * @param {Date} now
  * @param {number} currentWeek
@@ -193,21 +174,15 @@ export function getNextCourse(now, currentWeek) {
  * @returns {object|null} { course, daysLater, date }
  */
 export function getNextCourseAcrossDays(now, currentWeek) {
-  perfLog('getNextCourseAcrossDays_START')
   const week = currentWeek !== undefined ? currentWeek : calculateCurrentWeek(now)
   
   // 先检查今天剩余课程
-  const nextTodayStart = Date.now()
   const nextToday = getNextCourse(now, week)
-  perfLog('getNextCourseAcrossDays_NEXT_TODAY: ' + (Date.now() - nextTodayStart) + 'ms')
-  
   if (nextToday) {
-    perfLog('getNextCourseAcrossDays_END (found today)')
     return { course: nextToday, daysLater: 0, date: now }
   }
 
   // 检查未来7天
-  const futureLoopStart = Date.now()
   for (let i = 1; i <= 7; i++) {
     const futureDate = new Date(now)
     futureDate.setDate(futureDate.getDate() + i)
@@ -220,12 +195,10 @@ export function getNextCourseAcrossDays(now, currentWeek) {
     }
     const courses = getCoursesByWeekday(weekday, futureWeek)
     if (courses.length > 0) {
-      perfLog('getNextCourseAcrossDays_END (found day +' + i + ', loop: ' + (Date.now() - futureLoopStart) + 'ms)')
       return { course: courses[0], daysLater: i, date: futureDate }
     }
   }
   
-  perfLog('getNextCourseAcrossDays_END (not found, loop: ' + (Date.now() - futureLoopStart) + 'ms)')
   return null
 }
 
@@ -278,18 +251,6 @@ export function getCourseStatus(course, now) {
 export function getMinutesUntilStart(course, now) {
   const startTime = parseTimeToDate(course.startTime, now)
   return Math.max(0, diffMinutes(now, startTime))
-}
-
-/**
- * 格式化课程开始状态文字
- * @param {object} course
- * @param {Date} now
- * @returns {string}
- */
-export function formatCourseStartStatus(course, now) {
-  const minutes = getMinutesUntilStart(course, now)
-  if (minutes === 0) return '即将开始'
-  return `还有 ${minutes} 分钟`
 }
 
 /**

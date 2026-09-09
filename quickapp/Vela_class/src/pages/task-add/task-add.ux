@@ -313,11 +313,9 @@ export default {
 
     addTask(taskData)
       .then(() => {
-        console.log('待办添加成功')
         router.back()
       })
       .catch((err) => {
-        console.error('添加待办失败:', err)
         this.showError('添加待办失败')
       })
   },

@@ -179,8 +179,6 @@ import { getHistoryExams, formatExamDate } from '../../common/exam'
 import { getNow } from '../../common/time'
 import { ensureStorageReady, refreshExamsFromStorage, syncMockDataSetting } from '../../common/storage'
 
-const DEBUG_NOW = null
-
 export default {
   private: {
     isInitialized: false,
@@ -218,7 +216,7 @@ export default {
   },
 
   loadExams() {
-    const now = getNow(DEBUG_NOW)
+    const now = getNow()
 
     // 获取历史考试
     const exams = getHistoryExams(now)

@@ -295,8 +295,6 @@ import { getTasks, updateTaskStatus, ensureStorageReady, refreshTasksFromStorage
 import { getTaskCountdown, formatTaskCountdown, getTaskTypeText } from '../../common/task'
 import { getNow, parseDateTime } from '../../common/time'
 
-const DEBUG_NOW = null
-
 export default {
   protected: {
     taskId: ''
@@ -327,7 +325,7 @@ export default {
   },
 
   loadTask() {
-    const now = getNow(DEBUG_NOW)
+    const now = getNow()
     const tasks = getTasks()
 
     // 查找任务并复制为新对象
@@ -384,11 +382,9 @@ export default {
     this.deleting = true
     deleteTask(this.taskId)
       .then(() => {
-        console.log('Task deleted successfully')
         router.back()
       })
       .catch((err) => {
-        console.error('Failed to delete task:', err)
         this.deleting = false
         this.deleteConfirming = false
       })
