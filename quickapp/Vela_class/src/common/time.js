@@ -99,24 +99,6 @@ export function formatCountdown(targetDate, now) {
 }
 
 /**
- * 格式化考试倒计时（精确到秒）
- * @param {Date} targetDate
- * @param {Date} now
- * @returns {string}
- */
-export function formatExamCountdown(targetDate, now) {
-  const diffMs = targetDate - now
-  if (diffMs <= 0) return '已结束'
-
-  const totalSeconds = Math.floor(diffMs / 1000)
-  const hours = Math.floor(totalSeconds / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const seconds = totalSeconds % 60
-
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-}
-
-/**
  * 获取星期数字（1-7，1是周一）
  * @param {Date} date
  * @returns {number}
