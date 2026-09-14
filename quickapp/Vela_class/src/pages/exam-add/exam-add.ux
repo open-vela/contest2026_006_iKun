@@ -8,7 +8,7 @@
     </div>
 
     <!-- 可滚动内容区域 -->
-    <scroll id="formScroll" class="form-scroll" scroll-y="true" bounces="true">
+    <scroll class="form-scroll" scroll-y="true" bounces="true">
       <div class="content">
         <!-- 考试课程 -->
         <div class="form-group">
@@ -41,7 +41,7 @@
         <!-- 考场 -->
         <div class="form-group">
           <text class="label">考场</text>
-          <div class="input-wrapper" @click="showKeyboard('classroom')">
+          <div class="input-wrapper" @click="onInputFocus('classroom')">
             <text if="{{ !classroom }}" class="placeholder-text">请输入考场</text>
             <text class="input-text">{{ classroom }}</text>
           </div>
@@ -61,9 +61,9 @@
       hide="{{ keyboardHidden }}"
       screentype="circle"
       keyboardtype="QWERTY"
-      maxlength="5"
-      @complete="onComplete"
-      @delete="onDelete"
+      maxlength="20"
+      @complete="onKeyboardInput"
+      @delete="onKeyboardDelete"
     ></input-method>
   </div>
 </template>
@@ -234,59 +234,22 @@ export default {
     this.dateValueRange = valueRange
   },
 
-  showKeyboard(field) {
+  // 点击输入框时记录当前字段并打开键盘
+  onInputFocus(field) {
     this.currentInputField = field
     this.keyboardHidden = false
-    // 键盘弹出后滚动到输入框可见位置
-    this._scrollToField(field)
   },
 
-  _scrollToField(field) {
-    // picker(52px+12px) * 4 = 256px, classroom: label(21px) + input(52px) + margin(12px) = 85px
-    // classroom 底部 = 256 + 85 = 341px
-    const fieldBottoms = { classroom: 341 }
-    const fieldBottom = fieldBottoms[field] || 0
-
-    const KEYBOARD_H = 321
-    const PAGE_H = 466
-    const SCROLL_TOP = 80
-    const visibleH = PAGE_H - KEYBOARD_H - SCROLL_TOP
-    const padding = 10
-    const needScroll = fieldBottom - visibleH + padding
-
-    const tryScroll = (attempt) => {
-      setTimeout(() => {
-        const el = this.$element('formScroll')
-        if (!el || !el.getScrollRect) return
-
-        el.getScrollRect((rect) => {
-          const maxScroll = Math.max(0, (rect.scrollHeight || 0) - (rect.height || 385))
-
-          if (maxScroll === 0 && attempt < 3) {
-            tryScroll(attempt + 1)
-            return
-          }
-
-          let scrollTo = Math.max(0, needScroll)
-          if (maxScroll > 0 && scrollTo > maxScroll) {
-            scrollTo = maxScroll
-          }
-
-          el.scrollTo({ top: scrollTo, behavior: 'instant' })
-        })
-      }, attempt === 0 ? 350 : 200)
-    }
-    tryScroll(0)
-  },
-
-  onComplete(evt) {
-    const content = evt.detail.content
+  // 键盘输入事件
+  onKeyboardInput(evt) {
+    const content = evt.content || ''
     if (this.currentInputField === 'classroom') {
       this.classroom += content
     }
   },
 
-  onDelete() {
+  // 键盘删除事件
+  onKeyboardDelete() {
     if (this.currentInputField === 'classroom' && this.classroom.length > 0) {
       this.classroom = this.classroom.slice(0, -1)
     }
@@ -343,7 +306,9 @@ export default {
       return
     }
 
+    // 保存时关闭键盘
     this.keyboardHidden = true
+    this.currentInputField = ''
 
     const examData = {
       course: this.courseRange[this.selectedCourseIndex],
@@ -365,12 +330,7 @@ export default {
   onBackPress() {
     if (!this.keyboardHidden) {
       this.keyboardHidden = true
-      setTimeout(() => {
-        const el = this.$element('formScroll')
-        if (el && el.scrollTo) {
-          el.scrollTo({ top: 0, behavior: 'instant' })
-        }
-      }, 100)
+      this.currentInputField = ''
       return true
     }
     return false

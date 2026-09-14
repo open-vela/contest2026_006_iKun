@@ -9,26 +9,26 @@
     </div>
 
     <!-- 可滚动内容区域 -->
-    <scroll id="formScroll" class="form-scroll" scroll-y="true" bounces="true" >
+    <scroll class="form-scroll" scroll-y="true" bounces="true">
       <!-- 步骤1：基本信息 -->
       <div if="{{ step === 1 }}" class="content">
         <div class="form-group">
           <text class="label">课程名称</text>
-          <div class="input-wrapper" @click="showKeyboard('name')">
+          <div class="input-wrapper" @click="onInputFocus('name')">
             <text if="{{ !name }}" class="placeholder-text">请输入课程名称</text>
             <text class="input-text">{{ name }}</text>
           </div>
         </div>
         <div class="form-group">
           <text class="label">教师</text>
-          <div class="input-wrapper" @click="showKeyboard('teacher')">
+          <div class="input-wrapper" @click="onInputFocus('teacher')">
             <text if="{{ !teacher }}" class="placeholder-text">请输入教师姓名</text>
             <text class="input-text">{{ teacher }}</text>
           </div>
         </div>
         <div class="form-group">
           <text class="label">教室</text>
-          <div class="input-wrapper" @click="showKeyboard('classroom')">
+          <div class="input-wrapper" @click="onInputFocus('classroom')">
             <text if="{{ !classroom }}" class="placeholder-text">请输入教室</text>
             <text class="input-text">{{ classroom }}</text>
           </div>
@@ -124,9 +124,9 @@
       hide="{{ keyboardHidden }}"
       screentype="circle"
       keyboardtype="QWERTY"
-      maxlength="5"
-      @complete="onComplete"
-      @delete="onDelete"
+      maxlength="20"
+      @complete="onKeyboardInput"
+      @delete="onKeyboardDelete"
     ></input-method>
   </div>
 </template>
@@ -349,8 +349,6 @@ export default {
     weekRange: ['第1周', '第2周', '第3周', '第4周', '第5周', '第6周', '第7周', '第8周', '第9周', '第10周', '第11周', '第12周', '第13周', '第14周', '第15周', '第16周'],
     weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
     weeksText: '第1-16周 · 每周',
-    keyboardHidden: true,
-    currentInputField: '',
     weekdays: [
       { label: '一', value: 1 },
       { label: '二', value: 2 },
@@ -359,7 +357,9 @@ export default {
       { label: '五', value: 5 },
       { label: '六', value: 6 },
       { label: '日', value: 7 }
-    ]
+    ],
+    keyboardHidden: true,
+    currentInputField: ''
   },
 
   onInit() {
@@ -373,68 +373,15 @@ export default {
     })
   },
 
-  showKeyboard(field) {
+  // 点击输入框时记录当前字段并打开键盘
+  onInputFocus(field) {
     this.currentInputField = field
     this.keyboardHidden = false
-    // 键盘弹出后滚动到输入框可见位置
-    this._scrollToField(field)
   },
 
-  _scrollToField(field) {
-    // 各输入框在滚动内容中的垂直位置（px）
-    // form-group: label(~21px) + input(52px) + margin(12px) = ~85px
-    const fieldBottoms = { name: 85, teacher: 170, classroom: 255 }
-    const fieldBottom = fieldBottoms[field] || 0
-
-    // 键盘高度 321px，页面 466px，scroll 容器顶部约 80px
-    // 键盘弹出后可见的 scroll 区域 = 466 - 321 - 80 = 65px
-    const KEYBOARD_H = 321
-    const PAGE_H = 466
-    const SCROLL_TOP = 80
-    const visibleH = PAGE_H - KEYBOARD_H - SCROLL_TOP
-    const padding = 10
-
-    // 需要滚动的距离 = 字段底部 - 可见区域 + padding
-    const needScroll = fieldBottom - visibleH + padding
-
-    const tryScroll = (attempt) => {
-      setTimeout(() => {
-        const el = this.$element('formScroll')
-        if (!el || !el.getScrollRect) return
-
-        el.getScrollRect((rect) => {
-          const maxScroll = Math.max(0, (rect.scrollHeight || 0) - (rect.height || 385))
-
-          if (maxScroll === 0 && attempt < 3) {
-            tryScroll(attempt + 1)
-            return
-          }
-
-          let scrollTo = Math.max(0, needScroll)
-          if (maxScroll > 0 && scrollTo > maxScroll) {
-            scrollTo = maxScroll
-          }
-
-          el.scrollTo({ top: scrollTo, behavior: 'instant' })
-        })
-      }, attempt === 0 ? 350 : 200)
-    }
-    tryScroll(0)
-  },
-
-  hideKeyboard() {
-    this.keyboardHidden = true
-    // 键盘隐藏后重置滚动位置
-    setTimeout(() => {
-      const el = this.$element('formScroll')
-      if (el && el.scrollTo) {
-        el.scrollTo({ top: 0, behavior: 'instant' })
-      }
-    }, 100)
-  },
-
-  onComplete(evt) {
-    const content = evt.detail.content
+  // 键盘输入事件
+  onKeyboardInput(evt) {
+    const content = evt.content || ''
     if (this.currentInputField === 'name') {
       this.name += content
     } else if (this.currentInputField === 'teacher') {
@@ -444,7 +391,8 @@ export default {
     }
   },
 
-  onDelete() {
+  // 键盘删除事件
+  onKeyboardDelete() {
     if (this.currentInputField === 'name' && this.name.length > 0) {
       this.name = this.name.slice(0, -1)
     } else if (this.currentInputField === 'teacher' && this.teacher.length > 0) {
@@ -477,7 +425,6 @@ export default {
 
   onStartWeekChange(e) {
     this.startWeekIndex = e.newSelected
-    // 确保结束周不早于开始周
     if (this.endWeekIndex < this.startWeekIndex) {
       this.endWeekIndex = this.startWeekIndex
     }
@@ -486,7 +433,6 @@ export default {
 
   onEndWeekChange(e) {
     this.endWeekIndex = e.newSelected
-    // 确保结束周不早于开始周
     if (this.endWeekIndex < this.startWeekIndex) {
       this.startWeekIndex = this.endWeekIndex
     }
@@ -497,7 +443,6 @@ export default {
     const startWeek = this.startWeekIndex + 1
     const endWeek = this.endWeekIndex + 1
 
-    // 校验
     if (endWeek < startWeek) {
       this.weeks = []
       this.weeksText = '结束周不能早于开始周'
@@ -517,7 +462,6 @@ export default {
 
     this.weeks = weeks
 
-    // 生成文字描述
     const typeText = this.weekType === 'all' ? '每周' : (this.weekType === 'odd' ? '单周' : '双周')
     if (weeks.length === 0) {
       this.weeksText = '无课程'
@@ -534,7 +478,9 @@ export default {
         this.showError('请输入课程名称')
         return
       }
+      // 切换步骤时关闭键盘
       this.keyboardHidden = true
+      this.currentInputField = ''
     }
     if (this.step === 2) {
       if (!this.startTime || !this.endTime) {
@@ -548,26 +494,12 @@ export default {
     }
     if (this.step < 3) {
       this.step++
-      // 步骤切换后重置滚动位置
-      setTimeout(() => {
-        const el = this.$element('formScroll')
-        if (el && el.scrollTo) {
-          el.scrollTo({ top: 0, behavior: 'instant' })
-        }
-      }, 50)
     }
   },
 
   prevStep() {
     if (this.step > 1) {
       this.step--
-      // 步骤切换后重置滚动位置
-      setTimeout(() => {
-        const el = this.$element('formScroll')
-        if (el && el.scrollTo) {
-          el.scrollTo({ top: 0, behavior: 'instant' })
-        }
-      }, 50)
     }
   },
 
@@ -577,7 +509,9 @@ export default {
       return
     }
 
+    // 保存时关闭键盘
     this.keyboardHidden = true
+    this.currentInputField = ''
 
     const courseData = {
       name: this.name,
@@ -602,13 +536,7 @@ export default {
   onBackPress() {
     if (!this.keyboardHidden) {
       this.keyboardHidden = true
-      // 键盘隐藏后重置滚动位置
-      setTimeout(() => {
-        const el = this.$element('formScroll')
-        if (el && el.scrollTo) {
-          el.scrollTo({ top: 0, behavior: 'instant' })
-        }
-      }, 100)
+      this.currentInputField = ''
       return true
     }
     return false
