@@ -15,6 +15,10 @@
           <text class="label">考试课程</text>
           <picker class="picker" type="text" range="{{ courseRange }}" selected="{{ selectedCourseIndex }}" onchange="onCourseChange">
           </picker>
+          <div if="{{ selectedCourseIndex === 0 }}" class="input-wrapper custom-course-input" @click="onInputFocus('course')">
+            <text if="{{ !customCourseName }}" class="placeholder-text">请输入课程名称</text>
+            <text class="input-text">{{ customCourseName }}</text>
+          </div>
         </div>
 
         <!-- 考试日期 -->
@@ -137,6 +141,10 @@
   padding: 0 18px;
 }
 
+.custom-course-input {
+  margin-top: 8px;
+}
+
 .placeholder-text {
   font-size: 16px;
   color: #666666;
@@ -181,6 +189,7 @@ export default {
     courseRange: [],
     courseIds: [],
     selectedCourseIndex: 0,
+    customCourseName: '',
     dateDisplayRange: [],
     dateValueRange: [],
     selectedDateIndex: 1,  // 默认选择明天
@@ -207,13 +216,8 @@ export default {
 
   initCourseRange() {
     const courses = getCourses()
-    if (courses.length === 0) {
-      this.courseRange = ['暂无课程']
-      this.courseIds = []
-    } else {
-      this.courseRange = courses.map(c => c.name)
-      this.courseIds = courses.map(c => c.id)
-    }
+    this.courseRange = ['自定义课程', ...courses.map(c => c.name)]
+    this.courseIds = [null, ...courses.map(c => c.id)]
   },
 
   initDateRange() {
@@ -250,6 +254,8 @@ export default {
     const content = (evt && evt.detail && evt.detail.content) || ''
     if (this.currentInputField === 'classroom') {
       this.classroom += content
+    } else if (this.currentInputField === 'course') {
+      this.customCourseName += content
     }
   },
 
@@ -257,6 +263,8 @@ export default {
   onKeyboardDelete() {
     if (this.currentInputField === 'classroom' && this.classroom.length > 0) {
       this.classroom = this.classroom.slice(0, -1)
+    } else if (this.currentInputField === 'course' && this.customCourseName.length > 0) {
+      this.customCourseName = this.customCourseName.slice(0, -1)
     }
   },
 
@@ -281,9 +289,20 @@ export default {
   },
 
   saveExam() {
-    if (!this.courseIds[this.selectedCourseIndex]) {
-      this.showError(this.courseIds.length === 0 ? '请先在课表添加课程' : '请选择考试课程')
-      return
+    // 校验课程
+    let courseName = ''
+    if (this.selectedCourseIndex === 0) {
+      if (!this.customCourseName) {
+        this.showError('请输入课程名称')
+        return
+      }
+      courseName = this.customCourseName
+    } else {
+      if (!this.courseIds[this.selectedCourseIndex]) {
+        this.showError('请选择考试课程')
+        return
+      }
+      courseName = this.courseRange[this.selectedCourseIndex]
     }
 
     if (!this.startTime || !this.endTime) {
@@ -316,7 +335,7 @@ export default {
     this.currentInputField = ''
 
     const examData = {
-      course: this.courseRange[this.selectedCourseIndex],
+      course: courseName,
       date: examDateStr,
       startTime: this.startTime,
       endTime: this.endTime,
