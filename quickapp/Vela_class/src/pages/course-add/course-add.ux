@@ -51,17 +51,11 @@
         </div>
         <div class="form-group">
           <text class="label">开始时间</text>
-          <div class="picker-wrap">
-            <picker class="time-picker" type="time" selected="{{ startTime }}" onchange="onStartTimeChange"></picker>
-            <text class="picker-value">{{ startTime || '08:00' }}</text>
-          </div>
+          <picker class="picker" type="time" selected="{{ startTime }}" onchange="onStartTimeChange"></picker>
         </div>
         <div class="form-group">
           <text class="label">结束时间</text>
-          <div class="picker-wrap">
-            <picker class="time-picker" type="time" selected="{{ endTime }}" onchange="onEndTimeChange"></picker>
-            <text class="picker-value">{{ endTime || '09:00' }}</text>
-          </div>
+          <picker class="picker" type="time" selected="{{ endTime }}" onchange="onEndTimeChange"></picker>
         </div>
         <div class="btn-row">
           <div class="btn-back" @click="prevStep">
@@ -92,17 +86,11 @@
         </div>
         <div class="form-group">
           <text class="label">开始周</text>
-          <div class="picker-wrap">
-            <picker class="week-picker" type="text" range="{{ weekRange }}" selected="{{ startWeekIndex }}" onchange="onStartWeekChange"></picker>
-            <text class="picker-value">{{ weekRange[startWeekIndex] }}</text>
-          </div>
+          <picker class="picker" type="text" range="{{ weekRange }}" selected="{{ startWeekIndex }}" onchange="onStartWeekChange"></picker>
         </div>
         <div class="form-group">
           <text class="label">结束周</text>
-          <div class="picker-wrap">
-            <picker class="week-picker" type="text" range="{{ weekRange }}" selected="{{ endWeekIndex }}" onchange="onEndWeekChange"></picker>
-            <text class="picker-value">{{ weekRange[endWeekIndex] }}</text>
-          </div>
+          <picker class="picker" type="text" range="{{ weekRange }}" selected="{{ endWeekIndex }}" onchange="onEndWeekChange"></picker>
         </div>
         <div class="form-group">
           <text class="label">已选：{{ weeksText }}</text>
@@ -233,34 +221,13 @@
   color: #FFFFFF;
 }
 
-.picker-wrap {
+.picker {
   width: 100%;
   height: 52px;
   background-color: #1A1A1A;
   border-radius: 14px;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-}
-
-.time-picker {
-  width: 100%;
-  height: 52px;
   color: #FFFFFF;
   font-size: 17px;
-}
-
-.week-picker {
-  width: 100%;
-  height: 52px;
-  color: #FFFFFF;
-  font-size: 17px;
-}
-
-.picker-value {
-  font-size: 17px;
-  color: #FFFFFF;
-  position: absolute;
 }
 
 .week-type-selector {
@@ -381,7 +348,7 @@ export default {
 
   // 键盘输入事件
   onKeyboardInput(evt) {
-    const content = evt.content || ''
+    const content = (evt && evt.detail && evt.detail.content) || ''
     if (this.currentInputField === 'name') {
       this.name += content
     } else if (this.currentInputField === 'teacher') {

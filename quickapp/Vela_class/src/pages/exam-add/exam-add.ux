@@ -242,7 +242,7 @@ export default {
 
   // 键盘输入事件
   onKeyboardInput(evt) {
-    const content = evt.content || ''
+    const content = (evt && evt.detail && evt.detail.content) || ''
     if (this.currentInputField === 'classroom') {
       this.classroom += content
     }

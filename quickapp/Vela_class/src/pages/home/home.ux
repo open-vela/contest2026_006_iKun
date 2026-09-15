@@ -294,10 +294,12 @@
 
 <script>
 import router from '@system.router'
+import vibrator from '@system.vibrator'
+import prompt from '@system.prompt'
 import { getCurrentCourse, getNextCourse, getNextCourseAcrossDays, getCourseProgress, getCourseRemainingTime, getMinutesUntilStart, getTodayCourses, isTodayCoursesFinished } from '../../common/schedule'
-import { getNearestExam, getExamCountdown, getExamSummary } from '../../common/exam'
-import { getTaskSummary } from '../../common/task'
-import { getNow, formatTime, formatFullDate } from '../../common/time'
+import { getNearestExam, getUpcomingExams, getExamCountdown, getExamSummary } from '../../common/exam'
+import { getTasks, getTaskSummary } from '../../common/task'
+import { getNow, formatTime, formatFullDate, parseTimeToDate, parseDateTime } from '../../common/time'
 import { ensureStorageReady, refreshExamsFromStorage, refreshTasksFromStorage, refreshCoursesFromStorage, syncMockDataSetting } from '../../common/storage'
 
 
@@ -324,6 +326,8 @@ export default {
     timeTimer: null,
     courseTimer: null,
     examTimer: null,
+    reminderTimer: null,
+    reminderDone: {},
     debugClickCount: 0,
     debugClickTimer: null
   },
@@ -337,11 +341,13 @@ export default {
         this.updateStaticSummary()
         this.updateCourseStatus()
         this.startTimers()
+        this.checkReminders()
       })
       .catch(() => {
         this.updateStaticSummary()
         this.updateCourseStatus()
         this.startTimers()
+        this.checkReminders()
       })
   },
 
@@ -358,12 +364,14 @@ export default {
         this.updateStaticSummary()
         this.updateCourseStatus()
         this.startTimers()
+        this.checkReminders()
       })
       .catch(() => {
         this.updateTime()
         this.updateStaticSummary()
         this.updateCourseStatus()
         this.startTimers()
+        this.checkReminders()
       })
   },
 
@@ -389,6 +397,10 @@ export default {
     this.examTimer = setInterval(() => {
       this.updateExamCountdown()
     }, 60000)
+
+    this.reminderTimer = setInterval(() => {
+      this.checkReminders()
+    }, 30000)
   },
 
   clearTimers() {
@@ -403,6 +415,10 @@ export default {
     if (this.examTimer) {
       clearInterval(this.examTimer)
       this.examTimer = null
+    }
+    if (this.reminderTimer) {
+      clearInterval(this.reminderTimer)
+      this.reminderTimer = null
     }
     if (this.debugClickTimer) {
       clearTimeout(this.debugClickTimer)
@@ -484,6 +500,69 @@ export default {
       this.status = 'noClass'
       this.mainCardClass = ''
     }
+  },
+
+  checkReminders() {
+    const now = getNow()
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+
+    // 课程提醒：距下一节课开始 0 < diff <= 10 分钟
+    const nextCourse = getNextCourse(now)
+    if (nextCourse) {
+      const courseKey = `${nextCourse.id}_${todayStr}`
+      if (!this.reminderDone[courseKey]) {
+        const startTime = parseTimeToDate(nextCourse.startTime, now)
+        const diff = Math.ceil((startTime - now) / 60000)
+        if (diff > 0 && diff <= 10) {
+          this.reminderDone[courseKey] = true
+          this.triggerReminder(`《${nextCourse.name}》${diff}分钟后开始`, 'short')
+        }
+      }
+    }
+
+    // 考试提醒：取最近一场「尚未开始」的考试（开始时间 > now），0 < diff <= 60 分钟
+    const upcomingExams = getUpcomingExams(now)
+    const nearestUpcoming = upcomingExams.find(e => {
+      const examStart = parseDateTime(`${e.date}T${e.startTime}:00`)
+      return examStart && examStart > now
+    })
+    if (nearestUpcoming) {
+      const examKey = nearestUpcoming.id
+      if (!this.reminderDone[examKey]) {
+        const examStart = parseDateTime(`${nearestUpcoming.date}T${nearestUpcoming.startTime}:00`)
+        const diff = Math.ceil((examStart - now) / 60000)
+        if (diff > 0 && diff <= 60) {
+          this.reminderDone[examKey] = true
+          this.triggerReminder(`《${nearestUpcoming.course}》考试${diff}分钟后开始`, 'long')
+        }
+      }
+    }
+
+    // 待办截止提醒：距最近未完成待办截止 0 < diff <= 60 分钟
+    const tasks = getTasks().filter(t => !t.finished)
+    const upcomingTasks = tasks
+      .map(t => {
+        const deadline = parseDateTime(t.deadline)
+        if (!deadline || deadline <= now) return null
+        const diff = Math.ceil((deadline - now) / 60000)
+        return { ...t, deadline, diff }
+      })
+      .filter(t => t && t.diff > 0 && t.diff <= 60)
+      .sort((a, b) => a.diff - b.diff)
+
+    if (upcomingTasks.length > 0) {
+      const task = upcomingTasks[0]
+      const taskKey = task.id
+      if (!this.reminderDone[taskKey]) {
+        this.reminderDone[taskKey] = true
+        this.triggerReminder(`《${task.title}》${task.diff}分钟后截止`, 'long')
+      }
+    }
+  },
+
+  triggerReminder(message, mode) {
+    vibrator.vibrate({ mode: mode || 'short' })
+    prompt.showToast({ message: message, duration: 3000 })
   },
 
   goToCourseDetail() {
