@@ -207,8 +207,13 @@ export default {
 
   initCourseRange() {
     const courses = getCourses()
-    this.courseRange = courses.map(c => c.name)
-    this.courseIds = courses.map(c => c.id)
+    if (courses.length === 0) {
+      this.courseRange = ['暂无课程']
+      this.courseIds = []
+    } else {
+      this.courseRange = courses.map(c => c.name)
+      this.courseIds = courses.map(c => c.id)
+    }
   },
 
   initDateRange() {
@@ -277,7 +282,7 @@ export default {
 
   saveExam() {
     if (!this.courseIds[this.selectedCourseIndex]) {
-      this.showError('请选择考试课程')
+      this.showError(this.courseIds.length === 0 ? '请先在课表添加课程' : '请选择考试课程')
       return
     }
 

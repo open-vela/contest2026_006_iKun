@@ -109,6 +109,16 @@ export function getWeekdayNumber(date) {
 }
 
 /**
+ * 获取中文星期
+ * @param {Date} date
+ * @returns {string} 如 '周一'、'周日'
+ */
+export function getWeekday(date) {
+  const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+  return days[date.getDay()]
+}
+
+/**
  * 判断是否是今天
  * @param {Date} date
  * @param {Date} now
