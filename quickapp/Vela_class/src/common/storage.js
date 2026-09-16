@@ -565,6 +565,44 @@ export function deleteExam(examId) {
 }
 
 /**
+ * 更新用户手动添加的考试
+ * @param {string} examId 考试ID
+ * @param {object} examData 考试数据（不含id）
+ * @returns {Promise<object>} 更新后的考试对象
+ */
+export function updateExam(examId, examData) {
+  return new Promise((resolve, reject) => {
+    const index = examCache.findIndex(e => e.id === examId)
+    if (index === -1) {
+      reject(new Error('Exam not found'))
+      return
+    }
+
+    const isDefaultExam = exams.some(e => e.id === examId)
+    if (isDefaultExam) {
+      reject(new Error('Cannot update default exam'))
+      return
+    }
+
+    const oldExamCache = examCache
+    const updated = { id: examId, ...examData }
+    examCache = examCache.map(e => (e.id === examId ? updated : e))
+
+    storage.set({
+      key: STORAGE_KEYS.EXAMS,
+      value: JSON.stringify(examCache),
+      success: function () {
+        resolve(updated)
+      },
+      fail: function (data, code) {
+        examCache = oldExamCache
+        reject(new Error('Failed to update exam'))
+      }
+    })
+  })
+}
+
+/**
  * 添加新待办并持久化
  * @param {object} taskData 待办数据（不含id和finished）
  * @returns {Promise<object>} 新待办对象
@@ -635,6 +673,45 @@ export function deleteTask(taskId) {
       fail: function (data, code) {
         taskCache = oldTaskCache
         reject(new Error('Failed to delete task'))
+      }
+    })
+  })
+}
+
+/**
+ * 更新用户手动添加的待办
+ * @param {string} taskId 待办ID
+ * @param {object} taskData 待办数据（不含id和finished）
+ * @returns {Promise<object>} 更新后的待办对象
+ */
+export function updateTask(taskId, taskData) {
+  return new Promise((resolve, reject) => {
+    const index = taskCache.findIndex(t => t.id === taskId)
+    if (index === -1) {
+      reject(new Error('Task not found'))
+      return
+    }
+
+    const isDefaultTask = tasks.some(t => t.id === taskId)
+    if (isDefaultTask) {
+      reject(new Error('Cannot update default task'))
+      return
+    }
+
+    const oldTaskCache = taskCache
+    const oldTask = taskCache.find(t => t.id === taskId)
+    const updated = { id: taskId, ...taskData, finished: oldTask.finished }
+    taskCache = taskCache.map(t => (t.id === taskId ? updated : t))
+
+    storage.set({
+      key: STORAGE_KEYS.TASKS,
+      value: JSON.stringify(taskCache),
+      success: function () {
+        resolve(updated)
+      },
+      fail: function (data, code) {
+        taskCache = oldTaskCache
+        reject(new Error('Failed to update task'))
       }
     })
   })

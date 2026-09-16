@@ -4,7 +4,7 @@
   <div class="page">
     <!-- 顶部标题 -->
     <div class="header">
-      <text class="title">添加考试</text>
+      <text class="title">{{ isEdit ? '编辑考试' : '添加考试' }}</text>
     </div>
 
     <!-- 可滚动内容区域 -->
@@ -181,11 +181,16 @@
 <script>
 import router from '@system.router'
 import prompt from '@system.prompt'
-import { getCourses, addExam, ensureStorageReady } from '../../common/storage'
+import { getCourses, getExams, addExam, updateExam, ensureStorageReady } from '../../common/storage'
 import { getNow, getWeekday } from '../../common/time'
 
 export default {
+  protected: {
+    examId: ''
+  },
+
   private: {
+    isEdit: false,
     courseRange: [],
     courseIds: [],
     selectedCourseIndex: 0,
@@ -201,10 +206,43 @@ export default {
   },
 
   onInit() {
-    ensureStorageReady().then(() => {
-      this.initCourseRange()
-      this.initDateRange()
-    })
+    if (this.examId) {
+      this.isEdit = true
+      ensureStorageReady().then(() => {
+        this.initCourseRange()
+        this.initDateRange()
+        const exam = getExams().find(e => e.id === this.examId)
+        if (exam) {
+          this.prefill(exam)
+        }
+      })
+    } else {
+      ensureStorageReady().then(() => {
+        this.initCourseRange()
+        this.initDateRange()
+      })
+    }
+  },
+
+  prefill(exam) {
+    // 课程预填
+    const courseIndex = this.courseRange.findIndex(c => c === exam.course)
+    if (courseIndex !== -1) {
+      this.selectedCourseIndex = courseIndex
+    } else {
+      this.selectedCourseIndex = 0
+      this.customCourseName = exam.course
+    }
+
+    // 日期预填
+    const dateIndex = this.dateValueRange.findIndex(d => d === exam.date)
+    if (dateIndex !== -1) {
+      this.selectedDateIndex = dateIndex
+    }
+
+    this.startTime = exam.startTime || '09:00'
+    this.endTime = exam.endTime || '11:00'
+    this.classroom = exam.classroom || ''
   },
 
   showError(message) {
@@ -342,12 +380,13 @@ export default {
       classroom: this.classroom
     }
 
-    addExam(examData)
+    ensureStorageReady()
+      .then(() => this.examId ? updateExam(this.examId, examData) : addExam(examData))
       .then(() => {
         router.back()
       })
       .catch((err) => {
-        this.showError('添加考试失败')
+        this.showError('保存失败')
       })
   },
 

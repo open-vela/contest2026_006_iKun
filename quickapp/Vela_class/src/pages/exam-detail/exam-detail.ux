@@ -33,8 +33,11 @@
           <text class="countdown-text text-gray">已结束</text>
         </div>
 
-        <!-- 删除区域（仅用户添加的考试显示） -->
-        <div if="{{ canDelete }}" class="delete-section">
+        <!-- 修改/删除区域（仅用户添加的考试显示） -->
+        <div if="{{ canDelete }}" class="action-section">
+          <div class="edit-btn" onclick="onEditClick">
+            <text class="edit-btn-text">修改考试</text>
+          </div>
           <div if="{{ !deleteConfirming }}" class="delete-btn" onclick="onDeleteClick">
             <text class="delete-btn-text">删除考试</text>
           </div>
@@ -154,11 +157,28 @@
   color: #666666;
 }
 
-.delete-section {
+.action-section {
   width: 380px;
   margin-top: 25px;
   flex-direction: column;
   align-items: center;
+}
+
+.edit-btn {
+  width: 380px;
+  height: 50px;
+  border-radius: 25px;
+  background-color: #4FA3FF;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.edit-btn-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: #FFFFFF;
 }
 
 .delete-btn {
@@ -278,6 +298,13 @@ export default {
       })
   },
 
+  onShow() {
+    ensureStorageReady()
+      .then(() => refreshExamsFromStorage())
+      .then(() => this.loadExam())
+      .catch(() => this.loadExam())
+  },
+
   loadExam() {
     const now = getNow()
 
@@ -297,6 +324,15 @@ export default {
         this.countdownText = `还有 ${countdown.value} ${countdown.unit}`
       }
     }
+  },
+
+  onEditClick() {
+    router.push({
+      uri: '/pages/exam-add',
+      params: {
+        examId: this.examId
+      }
+    })
   },
 
   onDeleteClick() {

@@ -4,7 +4,7 @@
   <div class="page">
     <!-- 顶部标题 -->
     <div class="header">
-      <text class="title">添加待办</text>
+      <text class="title">{{ isEdit ? '编辑待办' : '添加待办' }}</text>
     </div>
 
     <!-- 可滚动内容区域 -->
@@ -173,11 +173,16 @@
 <script>
 import router from '@system.router'
 import prompt from '@system.prompt'
-import { getCourses, addTask, ensureStorageReady } from '../../common/storage'
+import { getCourses, getTasks, addTask, updateTask, ensureStorageReady } from '../../common/storage'
 import { getNow, getWeekday } from '../../common/time'
 
 export default {
+  protected: {
+    taskId: ''
+  },
+
   private: {
+    isEdit: false,
     title: '',
     courseRange: [],
     courseNames: [],
@@ -194,10 +199,54 @@ export default {
   },
 
   onInit() {
-    ensureStorageReady().then(() => {
-      this.initCourseRange()
-      this.initDateRange()
-    })
+    if (this.taskId) {
+      this.isEdit = true
+      ensureStorageReady().then(() => {
+        this.initCourseRange()
+        this.initDateRange()
+        const task = getTasks().find(t => t.id === this.taskId)
+        if (task) {
+          this.prefill(task)
+        }
+      })
+    } else {
+      ensureStorageReady().then(() => {
+        this.initCourseRange()
+        this.initDateRange()
+      })
+    }
+  },
+
+  prefill(task) {
+    this.title = task.title || ''
+
+    // 课程预填
+    const courseIndex = this.courseNames.findIndex(c => c === task.course)
+    if (courseIndex !== -1) {
+      this.selectedCourseIndex = courseIndex
+    } else {
+      this.selectedCourseIndex = 0
+    }
+
+    // 类型预填
+    const typeIndex = this.typeValues.findIndex(t => t === task.type)
+    if (typeIndex !== -1) {
+      this.selectedTypeIndex = typeIndex
+    }
+
+    // 日期和时间预填
+    if (task.deadline) {
+      const parts = task.deadline.split('T')
+      if (parts.length === 2) {
+        const dateStr = parts[0]
+        const timeStr = parts[1].substring(0, 5)
+        const dateIndex = this.dateValueRange.findIndex(d => d === dateStr)
+        if (dateIndex !== -1) {
+          this.selectedDateIndex = dateIndex
+        }
+        this.deadlineTime = timeStr
+      }
+    }
   },
 
   showError(message) {
@@ -312,12 +361,13 @@ export default {
       type: this.typeValues[this.selectedTypeIndex]
     }
 
-    addTask(taskData)
+    ensureStorageReady()
+      .then(() => this.taskId ? updateTask(this.taskId, taskData) : addTask(taskData))
       .then(() => {
         router.back()
       })
       .catch((err) => {
-        this.showError('添加待办失败')
+        this.showError('保存失败')
       })
   },
 
