@@ -4,7 +4,7 @@
   <div class="page">
     <!-- 顶部标题 -->
     <div class="header">
-      <text class="title">添加课程</text>
+      <text class="title">{{ isEdit ? '编辑课程' : '添加课程' }}</text>
       <text class="step-text">步骤 {{ step }}/3</text>
     </div>
 
@@ -299,10 +299,15 @@
 <script>
 import router from '@system.router'
 import prompt from '@system.prompt'
-import { addCourse, ensureStorageReady } from '../../common/storage'
+import { getCourses, addCourse, updateCourse, ensureStorageReady } from '../../common/storage'
 
 export default {
+  protected: {
+    courseId: ''
+  },
+
   private: {
+    isEdit: false,
     step: 1,
     name: '',
     teacher: '',
@@ -330,6 +335,41 @@ export default {
   },
 
   onInit() {
+    if (this.courseId) {
+      this.isEdit = true
+      ensureStorageReady().then(() => {
+        const course = getCourses().find(c => c.id === this.courseId)
+        if (course) {
+          this.prefill(course)
+        }
+      })
+    }
+    this.generateWeeks()
+  },
+
+  prefill(course) {
+    this.name = course.name || ''
+    this.teacher = course.teacher || ''
+    this.classroom = course.classroom || ''
+    this.selectedWeekday = course.weekday || 1
+    this.startTime = course.startTime || '08:00'
+    this.endTime = course.endTime || '09:00'
+
+    if (course.weeks && course.weeks.length > 0) {
+      this.startWeekIndex = Math.min(...course.weeks) - 1
+      this.endWeekIndex = Math.max(...course.weeks) - 1
+
+      const allOdd = course.weeks.every(w => w % 2 === 1)
+      const allEven = course.weeks.every(w => w % 2 === 0)
+      if (allOdd) {
+        this.weekType = 'odd'
+      } else if (allEven) {
+        this.weekType = 'even'
+      } else {
+        this.weekType = 'all'
+      }
+    }
+
     this.generateWeeks()
   },
 
@@ -491,12 +531,12 @@ export default {
     }
 
     ensureStorageReady()
-      .then(() => addCourse(courseData))
+      .then(() => this.courseId ? updateCourse(this.courseId, courseData) : addCourse(courseData))
       .then(() => {
         router.back()
       })
       .catch((err) => {
-        this.showError('添加课程失败')
+        this.showError('保存失败')
       })
   },
 

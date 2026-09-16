@@ -38,6 +38,28 @@
           </div>
         </div>
 
+        <!-- 删除所有课程 -->
+        <div class="setting-section">
+          <text class="setting-label">删除所有课程</text>
+          <text class="setting-desc">清空所有课程数据，便于新学期重新开始</text>
+
+          <div if="{{ !clearConfirming }}" class="btn-danger" onclick="onClearClick">
+            <text class="btn-text">删除所有课程</text>
+          </div>
+
+          <div if="{{ clearConfirming }}" class="confirm-area">
+            <text class="confirm-warning">确定删除所有课程？此操作不可恢复</text>
+            <div class="confirm-btns">
+              <div class="btn-cancel" onclick="onCancelClear">
+                <text class="btn-text">取消</text>
+              </div>
+              <div class="btn-confirm-danger" onclick="onConfirmClear">
+                <text class="btn-text">确认删除</text>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="bottom-safe-space"></div>
       </div>
     </scroll>
@@ -155,10 +177,58 @@
   justify-content: center;
 }
 
+.btn-danger {
+  width: 100%;
+  height: 46px;
+  border-radius: 23px;
+  background-color: #FF6B6B;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
 .btn-text {
   font-size: 16px;
   font-weight: 600;
   color: #FFFFFF;
+}
+
+.confirm-area {
+  flex-direction: column;
+  align-items: center;
+}
+
+.confirm-warning {
+  font-size: 14px;
+  color: #FF6B6B;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.confirm-btns {
+  flex-direction: row;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.btn-cancel {
+  width: 48%;
+  height: 46px;
+  border-radius: 23px;
+  background-color: #2B2B2B;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-confirm-danger {
+  width: 48%;
+  height: 46px;
+  border-radius: 23px;
+  background-color: #FF6B6B;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .bottom-safe-space {
@@ -170,7 +240,7 @@
 <script>
 import router from '@system.router'
 import prompt from '@system.prompt'
-import { getSemesterWeek1Start, setSemesterWeek1Start, ensureStorageReady } from '../../common/storage'
+import { getSemesterWeek1Start, setSemesterWeek1Start, ensureStorageReady, clearAllCourses } from '../../common/storage'
 
 export default {
   private: {
@@ -181,7 +251,9 @@ export default {
     dateValues: [],
     selectedDateIndex: 0, // 安全初始值，后续根据实际情况计算
     previewMonday: '',
-    previewSunday: ''
+    previewSunday: '',
+    clearConfirming: false,
+    clearing: false
   },
 
   onInit() {
@@ -295,6 +367,45 @@ export default {
 
   goBack() {
     router.back()
+  },
+
+  onClearClick() {
+    this.clearConfirming = true
+  },
+
+  onCancelClear() {
+    this.clearConfirming = false
+  },
+
+  onConfirmClear() {
+    if (this.clearing) return
+
+    this.clearing = true
+    clearAllCourses()
+      .then(() => {
+        this.clearing = false
+        this.clearConfirming = false
+        prompt.showToast({
+          message: '已清空所有课程',
+          duration: 2000
+        })
+      })
+      .catch(() => {
+        this.clearing = false
+        this.clearConfirming = false
+        prompt.showToast({
+          message: '删除失败',
+          duration: 2000
+        })
+      })
+  },
+
+  onBackPress() {
+    if (this.clearConfirming) {
+      this.clearConfirming = false
+      return true
+    }
+    return false
   }
 }
 </script>

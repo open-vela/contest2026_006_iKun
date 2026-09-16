@@ -109,11 +109,6 @@ export function formatCourseWeeks(weeks) {
   const totalWeeks = 16
   const allWeeks = Array.from({ length: totalWeeks }, (_, i) => i + 1)
 
-  // 判断是否为全周课程（1-16周）
-  if (weeks.length === totalWeeks && allWeeks.every(w => weeks.includes(w))) {
-    return '1-16周'
-  }
-
   // 判断是否为单周（奇数周）
   const oddWeeks = allWeeks.filter(w => w % 2 === 1)
   if (weeks.length === oddWeeks.length && oddWeeks.every(w => weeks.includes(w))) {
@@ -126,7 +121,13 @@ export function formatCourseWeeks(weeks) {
     return '双周'
   }
 
-  // 不规则周次，显示具体周次
+  // 判断是否为连续区间
+  const sorted = [...new Set(weeks)].sort((a, b) => a - b)
+  if (sorted.length > 1 && sorted[sorted.length - 1] - sorted[0] + 1 === sorted.length) {
+    return `${sorted[0]}-${sorted[sorted.length - 1]}周`
+  }
+
+  // 不连续周次，逐个列出
   return weeks.join(',') + '周'
 }
 

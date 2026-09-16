@@ -41,8 +41,11 @@
           <text class="status-text text-gray">已结束</text>
         </div>
 
-        <!-- 删除区域（仅用户添加的课程显示） -->
-        <div if="{{ canDelete }}" class="delete-section">
+        <!-- 修改/删除区域（仅用户添加的课程显示） -->
+        <div if="{{ canDelete }}" class="action-section">
+          <div class="edit-btn" onclick="onEditClick">
+            <text class="edit-btn-text">修改课程</text>
+          </div>
           <div if="{{ !deleteConfirming }}" class="delete-btn" onclick="onDeleteClick">
             <text class="delete-btn-text">删除课程</text>
           </div>
@@ -175,11 +178,28 @@
   margin-left: 15px;
 }
 
-.delete-section {
+.action-section {
   width: 380px;
   margin-top: 25px;
   flex-direction: column;
   align-items: center;
+}
+
+.edit-btn {
+  width: 380px;
+  height: 50px;
+  border-radius: 25px;
+  background-color: #4FA3FF;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.edit-btn-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: #FFFFFF;
 }
 
 .delete-btn {
@@ -280,7 +300,7 @@
 
 <script>
 import router from '@system.router'
-import { getCourses, ensureStorageReady, isUserCreatedCourse, deleteCourse } from '../../common/storage'
+import { getCourses, ensureStorageReady, refreshCoursesFromStorage, isUserCreatedCourse, deleteCourse } from '../../common/storage'
 import { getCourseStatus, getCourseProgress, getCourseRemainingTime, getMinutesUntilStart } from '../../common/schedule'
 import { getNow } from '../../common/time'
 
@@ -317,6 +337,13 @@ export default {
       })
   },
 
+  onShow() {
+    ensureStorageReady()
+      .then(() => refreshCoursesFromStorage())
+      .then(() => this.loadCourse())
+      .catch(() => this.loadCourse())
+  },
+
   loadCourse() {
     const now = getNow()
 
@@ -339,6 +366,15 @@ export default {
         }
       }
     }
+  },
+
+  onEditClick() {
+    router.push({
+      uri: '/pages/course-add',
+      params: {
+        courseId: this.courseId
+      }
+    })
   },
 
   onDeleteClick() {

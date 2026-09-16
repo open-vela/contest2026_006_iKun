@@ -427,6 +427,68 @@ export function deleteCourse(courseId) {
 }
 
 /**
+ * 清空用户手动添加的课程，保留 Mock 演示数据
+ * @returns {Promise<boolean>}
+ */
+export function clearAllCourses() {
+  return new Promise((resolve, reject) => {
+    const oldCourseCache = courseCache
+
+    courseCache = []
+
+    storage.set({
+      key: STORAGE_KEYS.COURSES,
+      value: JSON.stringify([]),
+      success: function () {
+        resolve(true)
+      },
+      fail: function () {
+        courseCache = oldCourseCache
+        reject(new Error('Failed to clear courses'))
+      }
+    })
+  })
+}
+
+/**
+ * 更新用户手动添加的课程
+ * @param {string} courseId 课程ID
+ * @param {object} courseData 课程数据（不含id）
+ * @returns {Promise<object>} 更新后的课程对象
+ */
+export function updateCourse(courseId, courseData) {
+  return new Promise((resolve, reject) => {
+    const index = courseCache.findIndex(c => c.id === courseId)
+    if (index === -1) {
+      reject(new Error('Course not found'))
+      return
+    }
+
+    const isDefaultCourse = courses.some(c => c.id === courseId)
+    if (isDefaultCourse) {
+      reject(new Error('Cannot update default course'))
+      return
+    }
+
+    const oldCourseCache = courseCache
+    const updated = { id: courseId, ...courseData }
+    courseCache = courseCache.map(c => (c.id === courseId ? updated : c))
+
+    storage.set({
+      key: STORAGE_KEYS.COURSES,
+      value: JSON.stringify(courseCache),
+      success: function () {
+        resolve(updated)
+      },
+      fail: function (data, code) {
+        courseCache = oldCourseCache
+        reject(new Error('Failed to update course'))
+      }
+    })
+  })
+}
+
+/**
  * 添加新考试并持久化
  * @param {object} examData 考试数据（不含id）
  * @returns {Promise<object>} 新考试对象
