@@ -2,6 +2,11 @@
   <div class="page">
     <!-- 顶部时间 -->
     <div class="header">
+      <div if="{{ semesterWeek > 0 }}" class="semester-row">
+        <text class="semester-text">第{{ semesterWeek }}周/16周</text>
+        <progress class="semester-progress" percent="{{ semesterProgress }}"></progress>
+      </div>
+      <text if="{{ semesterWeek === 0 }}" class="semester-empty">学期未开始</text>
       <text class="time">{{ currentTime }}</text>
       <text class="date">{{ currentDate }}</text>
     </div>
@@ -84,7 +89,7 @@
   background-color: #000000;
   width: 466px;
   height: 466px;
-  padding-top: 40px;
+  padding-top: 30px;
   padding-bottom: 20px;
 }
 
@@ -104,6 +109,35 @@
   font-size: 18px;
   color: #A0A0A0;
   margin-top: 3px;
+}
+
+.semester-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0;
+  margin-bottom: 4px;
+}
+
+.semester-text {
+  font-size: 15px;
+  color: #A0A0A0;
+  margin-right: 8px;
+}
+
+.semester-progress {
+  width: 100px;
+  height: 4px;
+  color: #4FA3FF;
+  layer-color: #2B2B2B;
+  stroke-width: 4px;
+}
+
+.semester-empty {
+  font-size: 13px;
+  color: #666666;
+  margin-top: 0;
+  margin-bottom: 4px;
 }
 
 .main-card {
@@ -306,7 +340,7 @@
 import router from '@system.router'
 import vibrator from '@system.vibrator'
 import prompt from '@system.prompt'
-import { getCurrentCourse, getNextCourse, getNextCourseAcrossDays, getCourseProgress, getCourseRemainingTime, getMinutesUntilStart, getTodayCourses, isTodayCoursesFinished } from '../../common/schedule'
+import { getCurrentCourse, getNextCourse, getNextCourseAcrossDays, getCourseProgress, getCourseRemainingTime, getMinutesUntilStart, getTodayCourses, isTodayCoursesFinished, calculateCurrentWeek } from '../../common/schedule'
 import { getNearestExam, getUpcomingExams, getExamCountdown, getExamSummary } from '../../common/exam'
 import { getTasks, getTaskSummary } from '../../common/task'
 import { getNow, formatTime, formatFullDate, parseTimeToDate, parseDateTime } from '../../common/time'
@@ -333,6 +367,8 @@ export default {
     examSummary: { count: 0, nearestCourse: null },
     taskSummary: { todayCount: 0, totalCount: 0, urgentCount: 0 },
     todayCourseCount: 0,
+    semesterWeek: 0,
+    semesterProgress: 0,
     timeTimer: null,
     courseTimer: null,
     examTimer: null,
@@ -444,6 +480,15 @@ export default {
 
   updateStaticSummary() {
     const now = getNow()
+
+    // 学期周次计算
+    const currentWeek = calculateCurrentWeek(now)
+    this.semesterWeek = currentWeek
+    if (currentWeek > 0) {
+      this.semesterProgress = Math.round(currentWeek / 16 * 100)
+    } else {
+      this.semesterProgress = 0
+    }
 
     const nearestExam = getNearestExam(now)
     this.nearestExam = nearestExam
