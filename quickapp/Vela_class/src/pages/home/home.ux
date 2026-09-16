@@ -38,8 +38,8 @@
       </div>
 
       <!-- 状态4: 今日无课 -->
-      <div if="{{ status === 'noClass' }}" class="card-content">
-        <text class="status-label status-gray">今日无课</text>
+      <div if="{{ status === 'noClass' }}" class="card-content {{ !nearestExam ? 'no-class-center' : '' }}">
+        <text class="status-label status-gray {{ !nearestExam ? 'no-class-large' : '' }}">今日无课</text>
         <div if="{{ nearestExam }}" class="exam-preview">
           <text class="exam-label">{{ examCountdown.isOngoing ? '考试进行中' : '最近考试还有' }}</text>
           <text class="exam-countdown">{{ examCountdown.value }} {{ examCountdown.unit }}</text>
@@ -132,6 +132,16 @@
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 4px;
+}
+
+.no-class-large {
+  font-size: 24px;
+  text-align: center;
+}
+
+.no-class-center {
+  width: 100%;
+  align-items: center;
 }
 
 .status-blue {
