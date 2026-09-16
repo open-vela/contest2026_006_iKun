@@ -516,6 +516,25 @@ export default {
       return
     }
 
+    // 课程冲突检测
+    const allCourses = getCourses()
+    const conflictCourse = allCourses.find(c => {
+      // 编辑模式排除自身
+      if (this.courseId && c.id === this.courseId) return false
+      // 不同星期不冲突
+      if (c.weekday !== this.selectedWeekday) return false
+      // 周次无交集不冲突
+      const hasWeekOverlap = this.weeks.some(w => c.weeks.includes(w))
+      if (!hasWeekOverlap) return false
+      // 时间段重叠检测
+      return this.startTime < c.endTime && this.endTime > c.startTime
+    })
+
+    if (conflictCourse) {
+      this.showError(`与课程「${conflictCourse.name}」时间冲突`)
+      return
+    }
+
     // 保存时关闭键盘
     this.keyboardHidden = true
     this.currentInputField = ''

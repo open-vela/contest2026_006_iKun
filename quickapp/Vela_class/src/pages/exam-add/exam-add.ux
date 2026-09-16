@@ -368,6 +368,22 @@ export default {
       return
     }
 
+    // 考试冲突检测
+    const allExams = getExams()
+    const conflictExam = allExams.find(e => {
+      // 编辑模式排除自身
+      if (this.examId && e.id === this.examId) return false
+      // 不同日期不冲突
+      if (e.date !== examDateStr) return false
+      // 时间段重叠检测
+      return this.startTime < e.endTime && this.endTime > e.startTime
+    })
+
+    if (conflictExam) {
+      this.showError(`与考试「${conflictExam.course}」时间冲突`)
+      return
+    }
+
     // 保存时关闭键盘
     this.keyboardHidden = true
     this.currentInputField = ''
