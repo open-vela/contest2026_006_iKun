@@ -158,8 +158,10 @@
 }
 
 .card-content {
+  width: 100%;
   flex-direction: column;
   justify-content: center;
+  align-items: flex-start;
 }
 
 .status-label {
