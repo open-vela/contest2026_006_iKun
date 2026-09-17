@@ -351,7 +351,7 @@ export default {
     this.course = getCourses().find(c => c.id === this.courseId)
 
     if (this.course) {
-      this.canDelete = isUserCreatedCourse(this.courseId)
+      this.canDelete = true
 
       // 只有从今日课表进入时才计算实时状态
       if (this.showStatus) {

@@ -2,6 +2,11 @@
  * 本地存储模块
  * 使用 @system.storage 实现离线数据持久化
  * 内存缓存 + system.storage 持久化
+ * 
+ * 数据架构：单源 + Mock ID 过滤
+ * - 所有数据统一存在 storage/cache 中
+ * - Mock 数据可删可改，无保护限制
+ * - 用原始 Mock ID 集合记录哪些是默认数据，用于开关过滤显示
  */
 
 import storage from '@system.storage'
@@ -15,18 +20,22 @@ const STORAGE_KEYS = {
   DEBUG_USE_MOCK_DATA: 'debug_use_mock_data'
 }
 
+// 原始 Mock ID 集合，用于区分默认数据和用户数据
+const ORIGINAL_COURSE_IDS = new Set(courses.map(c => c.id))
+const ORIGINAL_EXAM_IDS = new Set(exams.map(e => e.id))
+const ORIGINAL_TASK_IDS = new Set(tasks.map(t => t.id))
+
 // 内存缓存
 let courseCache = []
 let examCache = []
 let taskCache = []
-let semesterWeek1StartCache = null // 学期第一周周一日期字符串 YYYY-MM-DD
-let useMockDataCache = true // 默认启用Mock数据
+let semesterWeek1StartCache = null
+let useMockDataCache = true
 let storageReady = false
 let initPromise = null
 
 /**
  * 同步Mock数据设置状态
- * 从Storage读取最新状态并更新缓存
  * @returns {Promise<boolean>}
  */
 export function syncMockDataSetting() {
@@ -50,7 +59,7 @@ export function syncMockDataSetting() {
 
 /**
  * 初始化存储（单例）
- * 从 system.storage 读取数据，如果不存在则使用 Mock数据
+ * 首次启动时将 Mock 数据深拷贝初始化写入 storage
  * @returns {Promise}
  */
 export function initStorage() {
@@ -102,8 +111,18 @@ export function initStorage() {
         checkComplete()
       },
       fail: function () {
-        courseCache = []
-        checkComplete()
+        // 首次启动，初始化 Mock 课程数据
+        courseCache = courses.map(c => ({ ...c, weeks: [...c.weeks] }))
+        storage.set({
+          key: STORAGE_KEYS.COURSES,
+          value: JSON.stringify(courseCache),
+          success: function () {
+            checkComplete()
+          },
+          fail: function () {
+            checkComplete()
+          }
+        })
       }
     })
 
@@ -119,8 +138,18 @@ export function initStorage() {
         checkComplete()
       },
       fail: function () {
-        examCache = []
-        checkComplete()
+        // 首次启动，初始化 Mock 考试数据
+        examCache = exams.map(e => ({ ...e }))
+        storage.set({
+          key: STORAGE_KEYS.EXAMS,
+          value: JSON.stringify(examCache),
+          success: function () {
+            checkComplete()
+          },
+          fail: function () {
+            checkComplete()
+          }
+        })
       }
     })
 
@@ -136,8 +165,18 @@ export function initStorage() {
         checkComplete()
       },
       fail: function () {
-        taskCache = []
-        checkComplete()
+        // 首次启动，初始化 Mock 任务数据
+        taskCache = tasks.map(t => ({ ...t }))
+        storage.set({
+          key: STORAGE_KEYS.TASKS,
+          value: JSON.stringify(taskCache),
+          success: function () {
+            checkComplete()
+          },
+          fail: function () {
+            checkComplete()
+          }
+        })
       }
     })
 
@@ -170,47 +209,40 @@ export function ensureStorageReady() {
 }
 
 /**
- * 获取课程数据
+ * 获取课程数据（单源 + 开关过滤）
  * @returns {Array}
  */
 export function getCourses() {
-  if (useMockDataCache) {
-    const userCourseIds = courseCache.map(c => c.id)
-    const mockCourses = courses.filter(c => !userCourseIds.includes(c.id))
-    return [...mockCourses, ...courseCache]
+  if (!useMockDataCache) {
+    return courseCache.filter(c => !ORIGINAL_COURSE_IDS.has(c.id))
   }
   return courseCache
 }
 
 /**
- * 获取考试数据
+ * 获取考试数据（单源 + 开关过滤）
  * @returns {Array}
  */
 export function getExams() {
-  if (useMockDataCache) {
-    const userExamIds = examCache.map(e => e.id)
-    const mockExams = exams.filter(e => !userExamIds.includes(e.id))
-    return [...mockExams, ...examCache]
+  if (!useMockDataCache) {
+    return examCache.filter(e => !ORIGINAL_EXAM_IDS.has(e.id))
   }
   return examCache
 }
 
 /**
- * 获取待办数据
+ * 获取待办数据（单源 + 开关过滤）
  * @returns {Array}
  */
 export function getTasks() {
-  if (useMockDataCache) {
-    const userTaskIds = taskCache.map(t => t.id)
-    const mockTasks = tasks.filter(t => !userTaskIds.includes(t.id))
-    return [...mockTasks, ...taskCache]
+  if (!useMockDataCache) {
+    return taskCache.filter(t => !ORIGINAL_TASK_IDS.has(t.id))
   }
   return taskCache
 }
 
 /**
  * 从Storage读取是否使用默认Mock数据
- * 与 syncMockDataSetting 复用同一套逻辑
  * @returns {Promise<boolean>}
  */
 export function getUseMockDataFromStorage() {
@@ -242,7 +274,7 @@ export function setUseMockData(useMock) {
 }
 
 /**
- * 更新任务状态并持久化（不可变更新）
+ * 更新任务状态并持久化
  * @param {string} taskId
  * @param {boolean} finished
  * @returns {Promise<boolean>}
@@ -383,15 +415,11 @@ export function addCourse(courseData) {
  * @returns {boolean}
  */
 export function isUserCreatedCourse(courseId) {
-  const isDefaultCourse = courses.some(c => c.id === courseId)
-  if (isDefaultCourse) {
-    return false
-  }
-  return courseCache.some(c => c.id === courseId)
+  return !ORIGINAL_COURSE_IDS.has(courseId)
 }
 
 /**
- * 删除用户手动添加的课程
+ * 删除课程（允许删除 Mock 课程）
  * @param {string} courseId
  * @returns {Promise<boolean>}
  */
@@ -400,12 +428,6 @@ export function deleteCourse(courseId) {
     const courseIndex = courseCache.findIndex(c => c.id === courseId)
     if (courseIndex === -1) {
       reject(new Error('Course not found'))
-      return
-    }
-
-    const isDefaultCourse = courses.some(c => c.id === courseId)
-    if (isDefaultCourse) {
-      reject(new Error('Cannot delete default course'))
       return
     }
 
@@ -427,7 +449,7 @@ export function deleteCourse(courseId) {
 }
 
 /**
- * 清空用户手动添加的课程，保留 Mock 演示数据
+ * 清空所有课程
  * @returns {Promise<boolean>}
  */
 export function clearAllCourses() {
@@ -451,7 +473,7 @@ export function clearAllCourses() {
 }
 
 /**
- * 更新用户手动添加的课程
+ * 更新课程（允许更新 Mock 课程）
  * @param {string} courseId 课程ID
  * @param {object} courseData 课程数据（不含id）
  * @returns {Promise<object>} 更新后的课程对象
@@ -461,12 +483,6 @@ export function updateCourse(courseId, courseData) {
     const index = courseCache.findIndex(c => c.id === courseId)
     if (index === -1) {
       reject(new Error('Course not found'))
-      return
-    }
-
-    const isDefaultCourse = courses.some(c => c.id === courseId)
-    if (isDefaultCourse) {
-      reject(new Error('Cannot update default course'))
       return
     }
 
@@ -521,15 +537,11 @@ export function addExam(examData) {
  * @returns {boolean}
  */
 export function isUserCreatedExam(examId) {
-  const isDefaultExam = exams.some(e => e.id === examId)
-  if (isDefaultExam) {
-    return false
-  }
-  return examCache.some(e => e.id === examId)
+  return !ORIGINAL_EXAM_IDS.has(examId)
 }
 
 /**
- * 删除用户手动添加的考试
+ * 删除考试（允许删除 Mock 考试）
  * @param {string} examId
  * @returns {Promise<boolean>}
  */
@@ -538,12 +550,6 @@ export function deleteExam(examId) {
     const examIndex = examCache.findIndex(e => e.id === examId)
     if (examIndex === -1) {
       reject(new Error('Exam not found'))
-      return
-    }
-
-    const isDefaultExam = exams.some(e => e.id === examId)
-    if (isDefaultExam) {
-      reject(new Error('Cannot delete default exam'))
       return
     }
 
@@ -565,7 +571,7 @@ export function deleteExam(examId) {
 }
 
 /**
- * 批量删除用户添加的已结束考试，保留 Mock 数据
+ * 批量删除考试
  * @param {Array<string>} examIds 要删除的考试ID数组
  * @returns {Promise<boolean>}
  */
@@ -590,7 +596,7 @@ export function clearHistoryExams(examIds) {
 }
 
 /**
- * 更新用户手动添加的考试
+ * 更新考试（允许更新 Mock 考试）
  * @param {string} examId 考试ID
  * @param {object} examData 考试数据（不含id）
  * @returns {Promise<object>} 更新后的考试对象
@@ -600,12 +606,6 @@ export function updateExam(examId, examData) {
     const index = examCache.findIndex(e => e.id === examId)
     if (index === -1) {
       reject(new Error('Exam not found'))
-      return
-    }
-
-    const isDefaultExam = exams.some(e => e.id === examId)
-    if (isDefaultExam) {
-      reject(new Error('Cannot update default exam'))
       return
     }
 
@@ -660,15 +660,11 @@ export function addTask(taskData) {
  * @returns {boolean}
  */
 export function isUserCreatedTask(taskId) {
-  const isDefaultTask = tasks.some(t => t.id === taskId)
-  if (isDefaultTask) {
-    return false
-  }
-  return taskCache.some(t => t.id === taskId)
+  return !ORIGINAL_TASK_IDS.has(taskId)
 }
 
 /**
- * 删除用户手动添加的待办
+ * 删除待办（允许删除 Mock 待办）
  * @param {string} taskId
  * @returns {Promise<boolean>}
  */
@@ -677,12 +673,6 @@ export function deleteTask(taskId) {
     const taskIndex = taskCache.findIndex(t => t.id === taskId)
     if (taskIndex === -1) {
       reject(new Error('Task not found'))
-      return
-    }
-
-    const isDefaultTask = tasks.some(t => t.id === taskId)
-    if (isDefaultTask) {
-      reject(new Error('Cannot delete default task'))
       return
     }
 
@@ -704,7 +694,7 @@ export function deleteTask(taskId) {
 }
 
 /**
- * 更新用户手动添加的待办
+ * 更新待办（允许更新 Mock 待办）
  * @param {string} taskId 待办ID
  * @param {object} taskData 待办数据（不含id和finished）
  * @returns {Promise<object>} 更新后的待办对象
@@ -714,12 +704,6 @@ export function updateTask(taskId, taskData) {
     const index = taskCache.findIndex(t => t.id === taskId)
     if (index === -1) {
       reject(new Error('Task not found'))
-      return
-    }
-
-    const isDefaultTask = tasks.some(t => t.id === taskId)
-    if (isDefaultTask) {
-      reject(new Error('Cannot update default task'))
       return
     }
 
@@ -743,13 +727,60 @@ export function updateTask(taskId, taskData) {
 }
 
 /**
- * 重新加载默认Mock数据（调试用）
- * 只清理Mock数据缓存，不修改用户数据和开关状态
+ * 重置默认数据（恢复 Mock 数据到初始状态，保留用户添加的数据）
  * @returns {Promise}
  */
-export function reloadMockData() {
-  return new Promise((resolve) => {
-    resolve()
+export function resetToDefaultData() {
+  return new Promise((resolve, reject) => {
+    // 处理课程：移除旧默认 + 添加新默认 + 保留用户数据
+    const userCourses = courseCache.filter(c => !ORIGINAL_COURSE_IDS.has(c.id))
+    const defaultCourses = courses.map(c => ({ ...c, weeks: [...c.weeks] }))
+    courseCache = [...userCourses, ...defaultCourses]
+
+    // 处理考试
+    const userExams = examCache.filter(e => !ORIGINAL_EXAM_IDS.has(e.id))
+    const defaultExams = exams.map(e => ({ ...e }))
+    examCache = [...userExams, ...defaultExams]
+
+    // 处理待办
+    const userTasks = taskCache.filter(t => !ORIGINAL_TASK_IDS.has(t.id))
+    const defaultTasks = tasks.map(t => ({ ...t }))
+    taskCache = [...userTasks, ...defaultTasks]
+
+    let completed = 0
+    let hasError = false
+
+    const checkComplete = () => {
+      completed++
+      if (completed === 3) {
+        if (hasError) {
+          reject(new Error('Failed to reset data'))
+        } else {
+          resolve()
+        }
+      }
+    }
+
+    storage.set({
+      key: STORAGE_KEYS.COURSES,
+      value: JSON.stringify(courseCache),
+      success: checkComplete,
+      fail: function () { hasError = true; checkComplete() }
+    })
+
+    storage.set({
+      key: STORAGE_KEYS.EXAMS,
+      value: JSON.stringify(examCache),
+      success: checkComplete,
+      fail: function () { hasError = true; checkComplete() }
+    })
+
+    storage.set({
+      key: STORAGE_KEYS.TASKS,
+      value: JSON.stringify(taskCache),
+      success: checkComplete,
+      fail: function () { hasError = true; checkComplete() }
+    })
   })
 }
 

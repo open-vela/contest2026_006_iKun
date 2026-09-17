@@ -19,9 +19,9 @@
           <switch class="setting-switch" checked="{{ useMockData }}" onchange="onMockDataChange"></switch>
         </div>
 
-        <!-- 重新加载按钮 -->
-        <div class="btn-reset" onclick="reloadData">
-          <text class="btn-text">重新加载默认数据</text>
+        <!-- 重置按钮 -->
+        <div class="btn-reset" onclick="resetData">
+          <text class="btn-text">重置默认数据</text>
         </div>
 
         <!-- 提示信息 -->
@@ -29,8 +29,8 @@
 
         <div class="info-section">
           <text class="info-title">说明</text>
-          <text class="info-text">重新加载默认数据：更新Mock数据缓存，不影响开关状态。</text>
-          <text class="info-text">默认演示数据开关：控制是否显示Mock数据。</text>
+          <text class="info-text">重置默认数据：恢复默认演示数据到初始状态，保留用户添加的数据。</text>
+          <text class="info-text">默认演示数据开关：控制是否显示默认数据。</text>
         </div>
       </div>
     </scroll>
@@ -159,7 +159,7 @@
 <script>
 import router from '@system.router'
 import prompt from '@system.prompt'
-import { reloadMockData, getUseMockDataFromStorage, setUseMockData, ensureStorageReady } from '../../common/storage'
+import { resetToDefaultData, getUseMockDataFromStorage, setUseMockData, ensureStorageReady } from '../../common/storage'
 
 export default {
   private: {
@@ -225,18 +225,18 @@ export default {
       })
   },
 
-  reloadData() {
-    reloadMockData()
+  resetData() {
+    resetToDefaultData()
       .then(() => {
-        this.message = '默认数据已重新加载'
+        this.message = '默认数据已重置'
         prompt.showToast({
-          message: '默认数据已重新加载',
+          message: '默认数据已重置',
           duration: 2000
         })
       })
       .catch((err) => {
-        this.message = '重新加载失败'
-        console.error('Failed to reload mock data:', err)
+        this.message = '重置失败'
+        console.error('Failed to reset data:', err)
       })
   },
 

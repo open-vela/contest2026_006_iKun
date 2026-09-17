@@ -364,7 +364,7 @@ export default {
       this.deadlineText = this.formatDeadline(this.task.deadline)
       this.countdown = getTaskCountdown(this.task, now)
       this.countdownText = formatTaskCountdown(this.task, now)
-      this.canDelete = isUserCreatedTask(this.taskId)
+      this.canDelete = true
     }
   },
 

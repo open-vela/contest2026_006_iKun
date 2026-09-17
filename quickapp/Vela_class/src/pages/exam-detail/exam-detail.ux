@@ -313,7 +313,7 @@ export default {
 
     if (this.exam) {
       this.examDateText = formatExamDate(this.exam)
-      this.canDelete = isUserCreatedExam(this.examId)
+      this.canDelete = true
 
       const countdown = getExamCountdown(this.exam, now)
       if (countdown.isFinished) {

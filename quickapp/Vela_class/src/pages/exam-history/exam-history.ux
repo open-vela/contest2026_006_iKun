@@ -67,8 +67,7 @@
       <div if="{{ examList.length > 0 }}" class="exam-list">
         <div for="{{ examList }}" class="exam-item {{ selectMode && selectedIds.indexOf($item.id) !== -1 ? 'exam-item-selected' : '' }}" onclick="onExamItemClick($item.id)">
           <div if="{{ selectMode }}" class="check-mark">
-            <text if="{{ isUserExam($item.id) }}" class="check-icon {{ selectedIds.indexOf($item.id) !== -1 ? 'check-active' : '' }}">{{ selectedIds.indexOf($item.id) !== -1 ? '●' : '○' }}</text>
-            <text if="{{ !isUserExam($item.id) }}" class="lock-icon">🔒</text>
+            <text class="check-icon {{ selectedIds.indexOf($item.id) !== -1 ? 'check-active' : '' }}">{{ selectedIds.indexOf($item.id) !== -1 ? '●' : '○' }}</text>
           </div>
           <div class="exam-main">
             <text class="exam-name">{{ $item.course }}</text>
@@ -374,7 +373,7 @@ import router from '@system.router'
 import prompt from '@system.prompt'
 import { getHistoryExams, formatExamDate } from '../../common/exam'
 import { getNow } from '../../common/time'
-import { ensureStorageReady, refreshExamsFromStorage, syncMockDataSetting, clearHistoryExams, isUserCreatedExam } from '../../common/storage'
+import { ensureStorageReady, refreshExamsFromStorage, syncMockDataSetting, clearHistoryExams } from '../../common/storage'
 
 export default {
   private: {
@@ -428,8 +427,8 @@ export default {
       dateText: formatExamDate(e).split(' · ')[0]
     }))
 
-    // 检查是否有用户添加的考试
-    this.hasUserExams = this.examList.some(e => isUserCreatedExam(e.id))
+    // 检查是否有考试
+    this.hasUserExams = this.examList.length > 0
   },
 
   goToDetail(examId) {
@@ -461,11 +460,9 @@ export default {
     if (this.clearing) return
 
     this.clearing = true
-    const userExamIds = this.examList
-      .filter(e => isUserCreatedExam(e.id))
-      .map(e => e.id)
+    const allExamIds = this.examList.map(e => e.id)
 
-    if (userExamIds.length === 0) {
+    if (allExamIds.length === 0) {
       this.clearing = false
       this.clearConfirming = false
       prompt.showToast({
@@ -475,7 +472,7 @@ export default {
       return
     }
 
-    clearHistoryExams(userExamIds)
+    clearHistoryExams(allExamIds)
       .then(() => {
         this.clearing = false
         this.clearConfirming = false
@@ -512,7 +509,7 @@ export default {
   },
 
   isUserExam(examId) {
-    return isUserCreatedExam(examId)
+    return true
   },
 
   onManageClick() {
@@ -527,8 +524,6 @@ export default {
   },
 
   toggleSelect(examId) {
-    if (!isUserCreatedExam(examId)) return
-
     const index = this.selectedIds.indexOf(examId)
     if (index !== -1) {
       this.selectedIds.splice(index, 1)
@@ -538,14 +533,12 @@ export default {
   },
 
   onSelectAll() {
-    const userExamIds = this.examList
-      .filter(e => isUserCreatedExam(e.id))
-      .map(e => e.id)
+    const allExamIds = this.examList.map(e => e.id)
 
-    if (this.selectedIds.length === userExamIds.length) {
+    if (this.selectedIds.length === allExamIds.length) {
       this.selectedIds = []
     } else {
-      this.selectedIds = userExamIds
+      this.selectedIds = allExamIds
     }
   },
 
