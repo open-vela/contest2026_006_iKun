@@ -12,17 +12,50 @@
 
     <!-- 操作栏 -->
     <div if="{{ isInitialized }}" class="action-row">
-      <text class="action-text">已结束 · {{ examList.length }}场</text>
-      <div if="{{ !clearConfirming }}" class="clear-btn" onclick="onClearClick">
-        <text class="clear-btn-text">清除</text>
-      </div>
-      <div if="{{ clearConfirming }}" class="confirm-row">
-        <text class="confirm-text">确定清除？</text>
-        <div class="cancel-btn" onclick="onCancelClear">
-          <text class="cancel-btn-text">取消</text>
+      <!-- 正常模式 -->
+      <div if="{{ !selectMode }}" class="action-normal">
+        <text class="action-text">已结束 · {{ examList.length }}场</text>
+        <div if="{{ !clearConfirming }}" class="action-btns">
+          <div class="manage-btn" onclick="onManageClick">
+            <text class="manage-btn-text">管理</text>
+          </div>
+          <div class="clear-btn" onclick="onClearClick">
+            <text class="clear-btn-text">清除</text>
+          </div>
         </div>
-        <div class="confirm-btn" onclick="onConfirmClear">
-          <text class="confirm-btn-text">确认</text>
+        <div if="{{ clearConfirming }}" class="confirm-row">
+          <text class="confirm-text">确定清除？</text>
+          <div class="cancel-btn" onclick="onCancelClear">
+            <text class="cancel-btn-text">取消</text>
+          </div>
+          <div class="confirm-btn" onclick="onConfirmClear">
+            <text class="confirm-btn-text">确认</text>
+          </div>
+        </div>
+      </div>
+
+      <!-- 选择模式 -->
+      <div if="{{ selectMode }}" class="action-select">
+        <text class="selected-text">已选 {{ selectedIds.length }} 项</text>
+        <div class="select-btns">
+          <div class="select-all-btn" onclick="onSelectAll">
+            <text class="select-all-text">全选</text>
+          </div>
+          <div if="{{ !deleteConfirming }}" class="delete-btn" onclick="onDeleteClick">
+            <text class="delete-btn-text">删除</text>
+          </div>
+          <div if="{{ deleteConfirming }}" class="delete-confirm-row">
+            <text class="confirm-text">确定删除？</text>
+            <div class="cancel-btn" onclick="onCancelDelete">
+              <text class="cancel-btn-text">取消</text>
+            </div>
+            <div class="confirm-btn" onclick="onConfirmDelete">
+              <text class="confirm-btn-text">确认</text>
+            </div>
+          </div>
+          <div class="done-btn" onclick="onCancelManage">
+            <text class="done-btn-text">完成</text>
+          </div>
         </div>
       </div>
     </div>
@@ -32,7 +65,11 @@
 
       <!-- 考试列表 -->
       <div if="{{ examList.length > 0 }}" class="exam-list">
-        <div for="{{ examList }}" class="exam-item" onclick="goToDetail($item.id)">
+        <div for="{{ examList }}" class="exam-item {{ selectMode && selectedIds.indexOf($item.id) !== -1 ? 'exam-item-selected' : '' }}" onclick="onExamItemClick($item.id)">
+          <div if="{{ selectMode }}" class="check-mark">
+            <text if="{{ isUserExam($item.id) }}" class="check-icon {{ selectedIds.indexOf($item.id) !== -1 ? 'check-active' : '' }}">{{ selectedIds.indexOf($item.id) !== -1 ? '●' : '○' }}</text>
+            <text if="{{ !isUserExam($item.id) }}" class="lock-icon">🔒</text>
+          </div>
           <div class="exam-main">
             <text class="exam-name">{{ $item.course }}</text>
             <text class="exam-time">{{ $item.dateText }} · {{ $item.startTime }}-{{ $item.endTime }}</text>
@@ -89,16 +126,40 @@
 
 .action-row {
   width: 380px;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.action-normal {
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  margin-bottom: 12px;
+}
+
+.action-select {
+  flex-direction: column;
+  align-items: center;
 }
 
 .action-text {
   font-size: 15px;
   color: #8F8F8F;
   margin-right: 20px;
+}
+
+.action-btns {
+  flex-direction: row;
+  align-items: center;
+}
+
+.manage-btn {
+  margin-right: 10px;
+}
+
+.manage-btn-text {
+  font-size: 14px;
+  color: #4FA3FF;
 }
 
 .clear-btn {
@@ -110,6 +171,83 @@
 .clear-btn-text {
   font-size: 14px;
   color: #FFFFFF;
+}
+
+.selected-text {
+  font-size: 15px;
+  color: #4FA3FF;
+  margin-bottom: 8px;
+}
+
+.select-btns {
+  flex-direction: row;
+  align-items: center;
+}
+
+.select-all-btn {
+  padding: 6px 12px;
+  background-color: #2B2B2B;
+  border-radius: 14px;
+  margin-right: 8px;
+}
+
+.select-all-text {
+  font-size: 14px;
+  color: #FFFFFF;
+}
+
+.delete-btn {
+  padding: 6px 12px;
+  background-color: #FF6B6B;
+  border-radius: 14px;
+  margin-right: 8px;
+}
+
+.delete-btn-text {
+  font-size: 14px;
+  color: #FFFFFF;
+}
+
+.delete-confirm-row {
+  flex-direction: row;
+  align-items: center;
+  margin-right: 8px;
+}
+
+.done-btn {
+  padding: 6px 12px;
+  background-color: #4FA3FF;
+  border-radius: 14px;
+}
+
+.done-btn-text {
+  font-size: 14px;
+  color: #FFFFFF;
+}
+
+.check-mark {
+  width: 30px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+}
+
+.check-icon {
+  font-size: 18px;
+  color: #666666;
+}
+
+.check-active {
+  color: #4FA3FF;
+}
+
+.lock-icon {
+  font-size: 16px;
+}
+
+.exam-item-selected {
+  border-color: #4FA3FF;
 }
 
 .confirm-row {
@@ -244,7 +382,10 @@ export default {
     examList: [],
     hasUserExams: false,
     clearConfirming: false,
-    clearing: false
+    clearing: false,
+    selectMode: false,
+    selectedIds: [],
+    deleteConfirming: false
   },
 
   onInit() {
@@ -300,6 +441,14 @@ export default {
     })
   },
 
+  onExamItemClick(examId) {
+    if (this.selectMode) {
+      this.toggleSelect(examId)
+    } else {
+      this.goToDetail(examId)
+    }
+  },
+
   onClearClick() {
     this.clearConfirming = true
   },
@@ -347,11 +496,101 @@ export default {
   },
 
   onBackPress() {
+    if (this.deleteConfirming) {
+      this.deleteConfirming = false
+      return true
+    }
+    if (this.selectMode) {
+      this.onCancelManage()
+      return true
+    }
     if (this.clearConfirming) {
       this.clearConfirming = false
       return true
     }
     return false
+  },
+
+  isUserExam(examId) {
+    return isUserCreatedExam(examId)
+  },
+
+  onManageClick() {
+    this.selectMode = true
+    this.selectedIds = []
+  },
+
+  onCancelManage() {
+    this.selectMode = false
+    this.selectedIds = []
+    this.deleteConfirming = false
+  },
+
+  toggleSelect(examId) {
+    if (!isUserCreatedExam(examId)) return
+
+    const index = this.selectedIds.indexOf(examId)
+    if (index !== -1) {
+      this.selectedIds.splice(index, 1)
+    } else {
+      this.selectedIds.push(examId)
+    }
+  },
+
+  onSelectAll() {
+    const userExamIds = this.examList
+      .filter(e => isUserCreatedExam(e.id))
+      .map(e => e.id)
+
+    if (this.selectedIds.length === userExamIds.length) {
+      this.selectedIds = []
+    } else {
+      this.selectedIds = userExamIds
+    }
+  },
+
+  onDeleteClick() {
+    this.deleteConfirming = true
+  },
+
+  onCancelDelete() {
+    this.deleteConfirming = false
+  },
+
+  onConfirmDelete() {
+    if (this.clearing) return
+
+    if (this.selectedIds.length === 0) {
+      this.deleteConfirming = false
+      prompt.showToast({
+        message: '请先选择考试',
+        duration: 2000
+      })
+      return
+    }
+
+    this.clearing = true
+    clearHistoryExams(this.selectedIds)
+      .then(() => {
+        this.clearing = false
+        this.deleteConfirming = false
+        this.selectMode = false
+        const count = this.selectedIds.length
+        this.selectedIds = []
+        this.loadExams()
+        prompt.showToast({
+          message: `已删除${count}项`,
+          duration: 2000
+        })
+      })
+      .catch(() => {
+        this.clearing = false
+        this.deleteConfirming = false
+        prompt.showToast({
+          message: '删除失败',
+          duration: 2000
+        })
+      })
   }
 }
 </script>
