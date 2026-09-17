@@ -13,6 +13,18 @@
     <!-- 操作栏 -->
     <div if="{{ isInitialized }}" class="action-row">
       <text class="action-text">已结束 · {{ examList.length }}场</text>
+      <div if="{{ !clearConfirming }}" class="clear-btn" onclick="onClearClick">
+        <text class="clear-btn-text">清除</text>
+      </div>
+      <div if="{{ clearConfirming }}" class="confirm-row">
+        <text class="confirm-text">确定清除？</text>
+        <div class="cancel-btn" onclick="onCancelClear">
+          <text class="cancel-btn-text">取消</text>
+        </div>
+        <div class="confirm-btn" onclick="onConfirmClear">
+          <text class="confirm-btn-text">确认</text>
+        </div>
+      </div>
     </div>
 
     <!-- 可滚动区域 -->
@@ -76,7 +88,7 @@
 }
 
 .action-row {
-  width: 260px;
+  width: 380px;
   flex-direction: row;
   align-items: center;
   justify-content: center;
@@ -86,6 +98,52 @@
 .action-text {
   font-size: 15px;
   color: #8F8F8F;
+  margin-right: 20px;
+}
+
+.clear-btn {
+  padding: 6px 16px;
+  background-color: #FF6B6B;
+  border-radius: 14px;
+}
+
+.clear-btn-text {
+  font-size: 14px;
+  color: #FFFFFF;
+}
+
+.confirm-row {
+  flex-direction: row;
+  align-items: center;
+}
+
+.confirm-text {
+  font-size: 14px;
+  color: #FF6B6B;
+  margin-right: 10px;
+}
+
+.cancel-btn {
+  padding: 6px 12px;
+  background-color: #2B2B2B;
+  border-radius: 14px;
+  margin-right: 8px;
+}
+
+.cancel-btn-text {
+  font-size: 14px;
+  color: #FFFFFF;
+}
+
+.confirm-btn {
+  padding: 6px 12px;
+  background-color: #FF6B6B;
+  border-radius: 14px;
+}
+
+.confirm-btn-text {
+  font-size: 14px;
+  color: #FFFFFF;
 }
 
 .exam-scroll {
@@ -175,14 +233,18 @@
 
 <script>
 import router from '@system.router'
+import prompt from '@system.prompt'
 import { getHistoryExams, formatExamDate } from '../../common/exam'
 import { getNow } from '../../common/time'
-import { ensureStorageReady, refreshExamsFromStorage, syncMockDataSetting } from '../../common/storage'
+import { ensureStorageReady, refreshExamsFromStorage, syncMockDataSetting, clearHistoryExams, isUserCreatedExam } from '../../common/storage'
 
 export default {
   private: {
     isInitialized: false,
-    examList: []
+    examList: [],
+    hasUserExams: false,
+    clearConfirming: false,
+    clearing: false
   },
 
   onInit() {
@@ -224,6 +286,9 @@ export default {
       ...e,
       dateText: formatExamDate(e).split(' · ')[0]
     }))
+
+    // 检查是否有用户添加的考试
+    this.hasUserExams = this.examList.some(e => isUserCreatedExam(e.id))
   },
 
   goToDetail(examId) {
@@ -233,6 +298,60 @@ export default {
         examId: examId
       }
     })
+  },
+
+  onClearClick() {
+    this.clearConfirming = true
+  },
+
+  onCancelClear() {
+    this.clearConfirming = false
+  },
+
+  onConfirmClear() {
+    if (this.clearing) return
+
+    this.clearing = true
+    const userExamIds = this.examList
+      .filter(e => isUserCreatedExam(e.id))
+      .map(e => e.id)
+
+    if (userExamIds.length === 0) {
+      this.clearing = false
+      this.clearConfirming = false
+      prompt.showToast({
+        message: '没有可清除的考试',
+        duration: 2000
+      })
+      return
+    }
+
+    clearHistoryExams(userExamIds)
+      .then(() => {
+        this.clearing = false
+        this.clearConfirming = false
+        this.loadExams()
+        prompt.showToast({
+          message: '已清除',
+          duration: 2000
+        })
+      })
+      .catch(() => {
+        this.clearing = false
+        this.clearConfirming = false
+        prompt.showToast({
+          message: '清除失败',
+          duration: 2000
+        })
+      })
+  },
+
+  onBackPress() {
+    if (this.clearConfirming) {
+      this.clearConfirming = false
+      return true
+    }
+    return false
   }
 }
 </script>

@@ -565,6 +565,31 @@ export function deleteExam(examId) {
 }
 
 /**
+ * 批量删除用户添加的已结束考试，保留 Mock 数据
+ * @param {Array<string>} examIds 要删除的考试ID数组
+ * @returns {Promise<boolean>}
+ */
+export function clearHistoryExams(examIds) {
+  return new Promise((resolve, reject) => {
+    const oldExamCache = examCache
+
+    examCache = examCache.filter(e => !examIds.includes(e.id))
+
+    storage.set({
+      key: STORAGE_KEYS.EXAMS,
+      value: JSON.stringify(examCache),
+      success: function () {
+        resolve(true)
+      },
+      fail: function () {
+        examCache = oldExamCache
+        reject(new Error('Failed to clear history exams'))
+      }
+    })
+  })
+}
+
+/**
  * 更新用户手动添加的考试
  * @param {string} examId 考试ID
  * @param {object} examData 考试数据（不含id）
