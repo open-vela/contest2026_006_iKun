@@ -13,8 +13,16 @@
     <!-- 操作栏 -->
     <div if="{{ isInitialized }}" class="action-row">
       <text class="action-text">待处理 · {{ pendingCount }}项</text>
-      <div class="add-btn" onclick="goToAddTask">
-        <text class="add-text">+</text>
+      <div class="action-btns">
+        <div class="history-btn" onclick="goToHistory">
+          <text class="history-btn-text">历史</text>
+        </div>
+        <div class="settings-btn" onclick="goToSettings">
+          <text class="settings-btn-text">设置</text>
+        </div>
+        <div class="add-btn" onclick="goToAddTask">
+          <text class="add-text">+</text>
+        </div>
       </div>
     </div>
 
@@ -147,7 +155,7 @@
 }
 
 .action-row {
-  width: 260px;
+  width: 300px;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
@@ -157,6 +165,29 @@
 .action-text {
   font-size: 15px;
   color: #8F8F8F;
+}
+
+.action-btns {
+  flex-direction: row;
+  align-items: center;
+}
+
+.history-btn {
+  margin-right: 12px;
+}
+
+.history-btn-text {
+  font-size: 14px;
+  color: #4FA3FF;
+}
+
+.settings-btn {
+  margin-right: 12px;
+}
+
+.settings-btn-text {
+  font-size: 14px;
+  color: #4FA3FF;
 }
 
 .add-btn {
@@ -441,6 +472,18 @@ export default {
   goToAddTask() {
     router.push({
       uri: '/pages/task-add'
+    })
+  },
+
+  goToHistory() {
+    router.push({
+      uri: '/pages/task-history'
+    })
+  },
+
+  goToSettings() {
+    router.push({
+      uri: '/pages/task-settings'
     })
   }
 }

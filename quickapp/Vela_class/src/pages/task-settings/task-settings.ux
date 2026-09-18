@@ -1,0 +1,310 @@
+<template>
+  <div class="page">
+    <!-- 顶部标题 -->
+    <div class="header">
+      <text class="title">待办设置</text>
+    </div>
+
+    <!-- 内容区域 -->
+    <scroll class="settings-scroll" scroll-y="true" bounces="true">
+      <div class="content">
+        <!-- 历史归档天数设置 -->
+        <div class="setting-section">
+          <text class="setting-label">历史归档天数</text>
+          <text class="setting-desc">已完成待办超过N天后自动归入历史</text>
+
+          <!-- 当前设置显示 -->
+          <div class="current-setting">
+            <text class="current-text">当前：{{ currentDays }}天</text>
+          </div>
+
+          <!-- 天数选择器 -->
+          <picker class="picker" type="text" range="{{ daysOptions }}" selected="{{ selectedDaysIndex }}" onchange="onDaysChange">
+          </picker>
+
+          <!-- 自定义输入 -->
+          <div if="{{ selectedDaysIndex === 3 }}" class="custom-input-section">
+            <text class="custom-label">自定义天数</text>
+            <div class="input-wrapper" @click="onInputFocus('customDays')">
+              <text if="{{ !customDays }}" class="placeholder-text">请输入天数（≥1）</text>
+              <text class="input-text">{{ customDays }}</text>
+            </div>
+          </div>
+
+          <!-- 保存按钮 -->
+          <div class="btn-save" @click="saveSetting">
+            <text class="btn-text">保存设置</text>
+          </div>
+        </div>
+
+        <div class="bottom-safe-space"></div>
+      </div>
+    </scroll>
+
+    <!-- 输入法组件 -->
+    <input-method
+      hide="{{ keyboardHidden }}"
+      screentype="circle"
+      keyboardtype="number"
+      maxlength="3"
+      @complete="onKeyboardInput"
+      @delete="onKeyboardDelete"
+    ></input-method>
+  </div>
+</template>
+
+<style>
+.page {
+  flex-direction: column;
+  align-items: center;
+  background-color: #000000;
+  width: 466px;
+  height: 466px;
+  padding-top: 45px;
+}
+
+.header {
+  margin-bottom: 15px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.settings-scroll {
+  width: 400px;
+  height: 380px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.content {
+  width: 380px;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.setting-section {
+  width: 100%;
+  flex-direction: column;
+  padding: 15px;
+  background-color: #171717;
+  border-radius: 20px;
+  margin-bottom: 15px;
+}
+
+.setting-label {
+  font-size: 18px;
+  font-weight: 600;
+  color: #FFFFFF;
+  margin-bottom: 8px;
+}
+
+.setting-desc {
+  font-size: 13px;
+  color: #8F8F8F;
+  margin-bottom: 12px;
+}
+
+.current-setting {
+  margin-bottom: 12px;
+}
+
+.current-text {
+  font-size: 15px;
+  color: #4FA3FF;
+}
+
+.picker {
+  width: 100%;
+  height: 48px;
+  background-color: #2B2B2B;
+  border-radius: 12px;
+  color: #FFFFFF;
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+.custom-input-section {
+  margin-bottom: 12px;
+}
+
+.custom-label {
+  font-size: 14px;
+  color: #B0B0B0;
+  margin-bottom: 8px;
+  margin-left: 5px;
+}
+
+.input-wrapper {
+  width: 100%;
+  height: 52px;
+  background-color: #2B2B2B;
+  border-radius: 12px;
+  flex-direction: row;
+  align-items: center;
+  padding: 0 18px;
+}
+
+.placeholder-text {
+  font-size: 16px;
+  color: #666666;
+}
+
+.input-text {
+  font-size: 17px;
+  color: #FFFFFF;
+}
+
+.btn-save {
+  width: 100%;
+  height: 46px;
+  border-radius: 23px;
+  background-color: #4FA3FF;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.btn-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.bottom-safe-space {
+  height: 80px;
+  flex-shrink: 0;
+}
+</style>
+
+<script>
+import router from '@system.router'
+import prompt from '@system.prompt'
+import { getTaskHistoryDays, setTaskHistoryDays, ensureStorageReady, refreshTaskHistoryDaysFromStorage } from '../../common/storage'
+
+export default {
+  private: {
+    currentDays: 15,
+    selectedDaysIndex: 1,
+    customDays: '',
+    daysOptions: ['7天', '15天', '30天', '自定义'],
+    keyboardHidden: true,
+    currentInputField: ''
+  },
+
+  onInit() {
+    ensureStorageReady()
+      .then(() => refreshTaskHistoryDaysFromStorage())
+      .then(() => {
+        this.initDaysSetting()
+      })
+      .catch(() => {
+        this.initDaysSetting()
+      })
+  },
+
+  onShow() {
+    ensureStorageReady()
+      .then(() => refreshTaskHistoryDaysFromStorage())
+      .then(() => {
+        this.initDaysSetting()
+      })
+      .catch(() => {
+        this.initDaysSetting()
+      })
+  },
+
+  initDaysSetting() {
+    const days = getTaskHistoryDays()
+    this.currentDays = days
+
+    if (days === 7) {
+      this.selectedDaysIndex = 0
+    } else if (days === 15) {
+      this.selectedDaysIndex = 1
+    } else if (days === 30) {
+      this.selectedDaysIndex = 2
+    } else {
+      this.selectedDaysIndex = 3
+      this.customDays = String(days)
+    }
+  },
+
+  onDaysChange(e) {
+    this.selectedDaysIndex = e.newSelected
+    if (e.newSelected === 0) {
+      this.currentDays = 7
+    } else if (e.newSelected === 1) {
+      this.currentDays = 15
+    } else if (e.newSelected === 2) {
+      this.currentDays = 30
+    }
+  },
+
+  onInputFocus(field) {
+    this.currentInputField = field
+    this.keyboardHidden = false
+  },
+
+  onKeyboardInput(evt) {
+    const content = (evt && evt.detail && evt.detail.content) || ''
+    if (this.currentInputField === 'customDays') {
+      this.customDays += content
+    }
+  },
+
+  onKeyboardDelete() {
+    if (this.currentInputField === 'customDays' && this.customDays.length > 0) {
+      this.customDays = this.customDays.slice(0, -1)
+    }
+  },
+
+  saveSetting() {
+    let days = 0
+
+    if (this.selectedDaysIndex === 3) {
+      const parsed = parseInt(this.customDays)
+      if (isNaN(parsed) || parsed < 1) {
+        prompt.showToast({
+          message: '请输入有效的天数（≥1）',
+          duration: 2000
+        })
+        return
+      }
+      days = parsed
+    } else {
+      days = this.currentDays
+    }
+
+    setTaskHistoryDays(days)
+      .then(() => {
+        this.keyboardHidden = true
+        prompt.showToast({
+          message: '设置已保存',
+          duration: 2000
+        })
+        router.back()
+      })
+      .catch(() => {
+        prompt.showToast({
+          message: '保存失败',
+          duration: 2000
+        })
+      })
+  },
+
+  onBackPress() {
+    if (!this.keyboardHidden) {
+      this.keyboardHidden = true
+      this.currentInputField = ''
+      return true
+    }
+    return false
+  }
+}
+</script>

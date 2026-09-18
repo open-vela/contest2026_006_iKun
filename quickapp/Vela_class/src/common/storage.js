@@ -17,7 +17,8 @@ const STORAGE_KEYS = {
   EXAMS: 'campus_exams',
   TASKS: 'campus_tasks',
   SEMESTER_START: 'campus_semester_start',
-  DEBUG_USE_MOCK_DATA: 'debug_use_mock_data'
+  DEBUG_USE_MOCK_DATA: 'debug_use_mock_data',
+  TASK_HISTORY_DAYS: 'task_history_days'
 }
 
 // 原始 Mock ID 集合，用于区分默认数据和用户数据
@@ -31,6 +32,7 @@ let examCache = []
 let taskCache = []
 let semesterWeek1StartCache = null
 let useMockDataCache = true
+let taskHistoryDaysCache = 15
 let storageReady = false
 let initPromise = null
 
@@ -73,7 +75,7 @@ export function initStorage() {
 
   initPromise = new Promise((resolve) => {
     let loaded = 0
-    const total = 5
+    const total = 6
 
     const checkComplete = () => {
       loaded++
@@ -192,6 +194,20 @@ export function initStorage() {
         checkComplete()
       }
     })
+
+    // 读取历史待办归档天数
+    storage.get({
+      key: STORAGE_KEYS.TASK_HISTORY_DAYS,
+      success: function (data) {
+        const parsed = parseInt(data)
+        taskHistoryDaysCache = isNaN(parsed) ? 15 : parsed
+        checkComplete()
+      },
+      fail: function () {
+        taskHistoryDaysCache = 15
+        checkComplete()
+      }
+    })
   })
 
   return initPromise
@@ -293,7 +309,11 @@ export function updateTaskStatus(taskId, finished) {
       if (task.id !== taskId) {
         return task
       }
-      return { ...task, finished: finished }
+      if (finished) {
+        return { ...task, finished: true, finishedAt: new Date().toISOString() }
+      } else {
+        return { ...task, finished: false, finishedAt: '' }
+      }
     })
 
     storage.set({
@@ -830,6 +850,58 @@ export function setSemesterWeek1Start(dateStr) {
       fail: function (data, code) {
         semesterWeek1StartCache = oldValue
         reject(new Error('Failed to save semester start'))
+      }
+    })
+  })
+}
+
+/**
+ * 获取历史待办归档天数
+ * @returns {number}
+ */
+export function getTaskHistoryDays() {
+  return taskHistoryDaysCache
+}
+
+/**
+ * 设置历史待办归档天数
+ * @param {number} days
+ * @returns {Promise}
+ */
+export function setTaskHistoryDays(days) {
+  return new Promise((resolve, reject) => {
+    const oldValue = taskHistoryDaysCache
+    taskHistoryDaysCache = days
+
+    storage.set({
+      key: STORAGE_KEYS.TASK_HISTORY_DAYS,
+      value: String(days),
+      success: function () {
+        resolve()
+      },
+      fail: function (data, code) {
+        taskHistoryDaysCache = oldValue
+        reject(new Error('Failed to save task history days'))
+      }
+    })
+  })
+}
+
+/**
+ * 从 Storage 重新读取历史待办归档天数
+ * @returns {Promise<number>}
+ */
+export function refreshTaskHistoryDaysFromStorage() {
+  return new Promise((resolve, reject) => {
+    storage.get({
+      key: STORAGE_KEYS.TASK_HISTORY_DAYS,
+      success: function (data) {
+        const parsed = parseInt(data)
+        taskHistoryDaysCache = isNaN(parsed) ? 15 : parsed
+        resolve(taskHistoryDaysCache)
+      },
+      fail: function () {
+        resolve(taskHistoryDaysCache)
       }
     })
   })

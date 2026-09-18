@@ -1,0 +1,245 @@
+<template>
+  <div class="page">
+    <!-- 顶部标题 -->
+    <div class="header">
+      <text class="title">历史待办</text>
+    </div>
+
+    <!-- 加载状态 -->
+    <div if="{{ !isInitialized }}" class="loading-container">
+      <text class="loading-text">加载中...</text>
+    </div>
+
+    <!-- 操作栏 -->
+    <div if="{{ isInitialized }}" class="action-row">
+      <text class="action-text">已归档 · {{ taskList.length }}项</text>
+    </div>
+
+    <!-- 可滚动区域 -->
+    <scroll if="{{ isInitialized }}" class="task-scroll" scroll-y="true" bounces="true">
+
+      <!-- 历史待办列表 -->
+      <div if="{{ taskList.length > 0 }}" class="task-list">
+        <div for="{{ taskList }}" class="task-item" onclick="goToDetail($item.id)">
+          <div class="task-info">
+            <text class="task-name">{{ $item.title }}</text>
+            <text class="task-deadline">截止：{{ $item.deadlineText }}</text>
+            <text class="task-finished">完成：{{ $item.finishedText }}</text>
+          </div>
+        </div>
+      </div>
+
+      <!-- 空状态 -->
+      <div if="{{ taskList.length === 0 }}" class="empty">
+        <text class="empty-text">暂无历史待办</text>
+      </div>
+
+      <!-- 底部安全空间 -->
+      <div class="bottom-safe-space"></div>
+
+    </scroll>
+  </div>
+</template>
+
+<style>
+.page {
+  flex-direction: column;
+  align-items: center;
+  background-color: #000000;
+  width: 466px;
+  height: 466px;
+  padding-top: 45px;
+}
+
+.loading-container {
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+}
+
+.loading-text {
+  font-size: 16px;
+  color: #8F8F8F;
+}
+
+.header {
+  margin-bottom: 8px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.action-row {
+  width: 380px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.action-text {
+  font-size: 15px;
+  color: #8F8F8F;
+}
+
+.task-scroll {
+  width: 400px;
+  height: 350px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.task-list {
+  width: 380px;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.task-item {
+  flex-direction: row;
+  align-items: center;
+  background-color: #171717;
+  border-radius: 20px;
+  padding: 15px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+  min-height: 70px;
+}
+
+.task-info {
+  flex: 1;
+  flex-direction: column;
+}
+
+.task-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #FFFFFF;
+  margin-bottom: 6px;
+}
+
+.task-deadline {
+  font-size: 14px;
+  color: #8F8F8F;
+  margin-bottom: 4px;
+}
+
+.task-finished {
+  font-size: 13px;
+  color: #666666;
+}
+
+.empty {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100px;
+  flex-shrink: 0;
+}
+
+.empty-text {
+  font-size: 18px;
+  color: #666666;
+}
+
+.bottom-safe-space {
+  width: 380px;
+  height: 80px;
+  flex-shrink: 0;
+}
+</style>
+
+<script>
+import router from '@system.router'
+import { getHistoryTasks } from '../../common/task'
+import { getTaskHistoryDays, ensureStorageReady, refreshTasksFromStorage, refreshTaskHistoryDaysFromStorage, syncMockDataSetting } from '../../common/storage'
+import { getNow, parseDateTime } from '../../common/time'
+
+export default {
+  private: {
+    isInitialized: false,
+    taskList: [],
+    historyDays: 15
+  },
+
+  onInit() {
+    ensureStorageReady()
+      .then(() => syncMockDataSetting())
+      .then(() => Promise.all([
+        refreshTasksFromStorage(),
+        refreshTaskHistoryDaysFromStorage()
+      ]))
+      .then(() => {
+        this.historyDays = getTaskHistoryDays()
+        this.loadHistoryTasks()
+        this.isInitialized = true
+      })
+      .catch((err) => {
+        console.error('Failed to initialize storage:', err)
+        this.historyDays = getTaskHistoryDays()
+        this.loadHistoryTasks()
+        this.isInitialized = true
+      })
+  },
+
+  onShow() {
+    if (!this.isInitialized) return
+
+    ensureStorageReady()
+      .then(() => syncMockDataSetting())
+      .then(() => Promise.all([
+        refreshTasksFromStorage(),
+        refreshTaskHistoryDaysFromStorage()
+      ]))
+      .then(() => {
+        this.historyDays = getTaskHistoryDays()
+        this.loadHistoryTasks()
+      })
+      .catch((err) => {
+        console.error('Failed to refresh history tasks:', err)
+        this.loadHistoryTasks()
+      })
+  },
+
+  loadHistoryTasks() {
+    const now = getNow()
+    const tasks = getHistoryTasks(now, this.historyDays)
+
+    this.taskList = tasks.map(t => ({
+      ...t,
+      deadlineText: this.formatDate(t.deadline),
+      finishedText: this.formatFinishedTime(t.finishedAt || t.deadline)
+    }))
+  },
+
+  formatDate(deadline) {
+    const date = parseDateTime(deadline)
+    if (!date) return ''
+    const month = date.getMonth() + 1
+    const day = date.getDate()
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `${month}月${day}日 ${hours}:${minutes}`
+  },
+
+  formatFinishedTime(finishedAt) {
+    const date = parseDateTime(finishedAt)
+    if (!date) return ''
+    const month = date.getMonth() + 1
+    const day = date.getDate()
+    return `${month}月${day}日完成`
+  },
+
+  goToDetail(taskId) {
+    router.push({
+      uri: '/pages/task-detail',
+      params: {
+        taskId: taskId
+      }
+    })
+  }
+}
+</script>

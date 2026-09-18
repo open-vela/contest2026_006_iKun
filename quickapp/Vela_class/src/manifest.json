@@ -70,6 +70,12 @@
       },
       "pages/schedule-settings": {
         "component": "schedule-settings"
+      },
+      "pages/task-history": {
+        "component": "task-history"
+      },
+      "pages/task-settings": {
+        "component": "task-settings"
       }
     }
   }
