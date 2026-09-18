@@ -12,6 +12,12 @@
           <text class="time-value">{{ course.endTime }}</text>
         </div>
 
+        <!-- 周次信息 -->
+        <div class="info-row">
+          <text class="info-label">周次</text>
+          <text class="info-value">{{ weeksText }}</text>
+        </div>
+
         <!-- 地点信息 -->
         <div class="info-row">
           <text class="info-label">教室</text>
@@ -301,7 +307,7 @@
 <script>
 import router from '@system.router'
 import { getCourses, ensureStorageReady, refreshCoursesFromStorage, isUserCreatedCourse, deleteCourse } from '../../common/storage'
-import { getCourseStatus, getCourseProgress, getCourseRemainingTime, getMinutesUntilStart } from '../../common/schedule'
+import { getCourseStatus, getCourseProgress, getCourseRemainingTime, getMinutesUntilStart, formatCourseWeeks } from '../../common/schedule'
 import { getNow } from '../../common/time'
 
 export default {
@@ -312,6 +318,7 @@ export default {
 
   private: {
     course: null,
+    weeksText: '',
     status: 'upcoming',
     progress: 0,
     progressPercent: 0,
@@ -352,6 +359,7 @@ export default {
 
     if (this.course) {
       this.canDelete = true
+      this.weeksText = formatCourseWeeks(this.course.weeks)
 
       // 只有从今日课表进入时才计算实时状态
       if (this.showStatus) {

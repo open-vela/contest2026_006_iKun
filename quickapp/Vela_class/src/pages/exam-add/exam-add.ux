@@ -353,11 +353,6 @@ export default {
       return
     }
 
-    if (!this.classroom) {
-      this.showError('请输入考场')
-      return
-    }
-
     // 校验考试开始时间必须晚于当前时间
     const examDateStr = this.dateValueRange[this.selectedDateIndex]
     const examStartDateTime = new Date(`${examDateStr}T${this.startTime}:00`)
