@@ -109,22 +109,25 @@ export function formatCourseWeeks(weeks) {
   const totalWeeks = 16
   const allWeeks = Array.from({ length: totalWeeks }, (_, i) => i + 1)
 
+  const sorted = [...new Set(weeks)].sort((a, b) => a - b)
+  const min = sorted[0]
+  const max = sorted[sorted.length - 1]
+
   // 判断是否为单周（奇数周）
   const oddWeeks = allWeeks.filter(w => w % 2 === 1)
   if (weeks.length === oddWeeks.length && oddWeeks.every(w => weeks.includes(w))) {
-    return '单周'
+    return `${min}-${max}周 单周`
   }
 
   // 判断是否为双周（偶数周）
   const evenWeeks = allWeeks.filter(w => w % 2 === 0)
   if (weeks.length === evenWeeks.length && evenWeeks.every(w => weeks.includes(w))) {
-    return '双周'
+    return `${min}-${max}周 双周`
   }
 
   // 判断是否为连续区间
-  const sorted = [...new Set(weeks)].sort((a, b) => a - b)
-  if (sorted.length > 1 && sorted[sorted.length - 1] - sorted[0] + 1 === sorted.length) {
-    return `${sorted[0]}-${sorted[sorted.length - 1]}周`
+  if (sorted.length > 1 && max - min + 1 === sorted.length) {
+    return `${min}-${max}周`
   }
 
   // 不连续周次，逐个列出

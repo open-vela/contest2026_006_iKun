@@ -3,161 +3,141 @@
  * 包含课程、考试、待办的模拟数据
  */
 
-// 课程数据（覆盖周一至周五，每天上午/下午/晚上）
+// 课程数据
 export const courses = [
   // 周一
   {
     id: 'course_001',
-    name: '高等数学',
-    teacher: '李老师',
+    name: '习近平新时代中国特色社会主义思想概论',
+    teacher: '',
     weekday: 1,
-    startTime: '08:00',
-    endTime: '09:40',
-    classroom: '教一204',
+    startTime: '15:20',
+    endTime: '16:55',
+    classroom: '',
     weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
   },
   {
     id: 'course_002',
-    name: 'Python程序设计',
-    teacher: '周老师',
+    name: '形势与政策',
+    teacher: '',
     weekday: 1,
-    startTime: '14:00',
-    endTime: '15:40',
-    classroom: '教六102',
-    weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
-  },
-  {
-    id: 'course_003',
-    name: '线性代数',
-    teacher: '吴老师',
-    weekday: 1,
-    startTime: '18:30',
-    endTime: '20:10',
-    classroom: '教一305',
-    weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+    startTime: '18:00',
+    endTime: '19:35',
+    classroom: '',
+    weeks: [9, 10, 11]
   },
   // 周二
   {
-    id: 'course_004',
-    name: '数据结构',
-    teacher: '张老师',
+    id: 'course_003',
+    name: '自动控制原理基础',
+    teacher: '',
     weekday: 2,
-    startTime: '10:00',
-    endTime: '11:40',
-    classroom: '教三301',
-    weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+    startTime: '08:00',
+    endTime: '09:35',
+    classroom: '',
+    weeks: [1, 2, 3, 4, 5, 6, 7, 8]
+  },
+  {
+    id: 'course_004',
+    name: '工程伦理',
+    teacher: '',
+    weekday: 2,
+    startTime: '13:30',
+    endTime: '15:05',
+    classroom: '',
+    weeks: [1, 3, 5, 7, 9, 11, 13, 15]
   },
   {
     id: 'course_005',
-    name: '数据库原理',
-    teacher: '陈老师',
+    name: '智能交通信息专题',
+    teacher: '',
     weekday: 2,
-    startTime: '14:00',
-    endTime: '15:40',
-    classroom: '教三401',
-    weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+    startTime: '15:20',
+    endTime: '16:55',
+    classroom: '',
+    weeks: [1, 2, 3, 4, 5, 6, 7, 8]
   },
   {
     id: 'course_006',
-    name: 'Java程序设计',
-    teacher: '孙老师',
+    name: '嵌入式软件开发',
+    teacher: '',
     weekday: 2,
-    startTime: '18:30',
-    endTime: '20:10',
-    classroom: '教六201',
-    weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+    startTime: '15:20',
+    endTime: '16:55',
+    classroom: '',
+    weeks: [9, 10, 11, 12, 13, 14, 15, 16]
   },
   // 周三
   {
     id: 'course_007',
-    name: '大学英语',
-    teacher: '王老师',
+    name: '交通感知与信息处理',
+    teacher: '',
     weekday: 3,
-    startTime: '08:00',
-    endTime: '09:40',
-    classroom: '教二401',
-    weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
-  },
-  {
-    id: 'course_008',
-    name: '软件工程',
-    teacher: '杨老师',
-    weekday: 3,
-    startTime: '14:00',
-    endTime: '15:40',
-    classroom: '教二201',
-    weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
-  },
-  {
-    id: 'course_009',
-    name: '人工智能导论',
-    teacher: '郑老师',
-    weekday: 3,
-    startTime: '18:30',
-    endTime: '20:10',
-    classroom: '教五301',
-    weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+    startTime: '15:20',
+    endTime: '16:55',
+    classroom: '',
+    weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
   },
   // 周四
   {
-    id: 'course_010',
-    name: '操作系统',
-    teacher: '赵老师',
+    id: 'course_008',
+    name: '智能交通信息专题',
+    teacher: '',
     weekday: 4,
     startTime: '08:00',
-    endTime: '09:40',
-    classroom: '教四205',
-    weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+    endTime: '09:35',
+    classroom: '',
+    weeks: [1, 2, 3, 4, 5, 6, 7, 8]
   },
   {
-    id: 'course_011',
-    name: '计算机网络',
-    teacher: '刘老师',
+    id: 'course_009',
+    name: '嵌入式软件开发',
+    teacher: '',
     weekday: 4,
-    startTime: '14:00',
-    endTime: '15:40',
-    classroom: '教五301',
-    weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+    startTime: '13:30',
+    endTime: '15:05',
+    classroom: '',
+    weeks: [9, 10, 11, 12, 13, 14, 15, 16]
   },
   {
-    id: 'course_012',
-    name: 'Web前端开发',
-    teacher: '马老师',
+    id: 'course_010',
+    name: '习近平新时代中国特色社会主义思想概论',
+    teacher: '',
     weekday: 4,
-    startTime: '18:30',
-    endTime: '20:10',
-    classroom: '教六102',
-    weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+    startTime: '15:20',
+    endTime: '16:55',
+    classroom: '',
+    weeks: [2, 4, 6, 8, 10, 12, 14, 16]
   },
   // 周五
   {
-    id: 'course_013',
-    name: '概率论与数理统计',
-    teacher: '钱老师',
+    id: 'course_011',
+    name: '交通感知与信息处理',
+    teacher: '',
     weekday: 5,
     startTime: '08:00',
-    endTime: '09:40',
-    classroom: '教一204',
-    weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+    endTime: '09:35',
+    classroom: '',
+    weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
   },
   {
-    id: 'course_014',
-    name: '编译原理',
-    teacher: '冯老师',
+    id: 'course_012',
+    name: '自动控制原理基础',
+    teacher: '',
     weekday: 5,
-    startTime: '14:00',
-    endTime: '15:40',
-    classroom: '教四205',
-    weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+    startTime: '13:30',
+    endTime: '15:05',
+    classroom: '',
+    weeks: [1, 2, 3, 4, 5, 6, 7, 8]
   },
   {
-    id: 'course_015',
-    name: '移动应用开发',
-    teacher: '黄老师',
+    id: 'course_013',
+    name: '小红书内容创作与运营',
+    teacher: '',
     weekday: 5,
-    startTime: '18:30',
-    endTime: '20:10',
-    classroom: '教六201',
+    startTime: '18:00',
+    endTime: '19:35',
+    classroom: '',
     weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
   }
 ]
