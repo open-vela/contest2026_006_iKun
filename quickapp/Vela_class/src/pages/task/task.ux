@@ -323,8 +323,8 @@
 
 <script>
 import router from '@system.router'
-import { getOverdueTasks, getTodayTasks, getWeekTasks, getFutureTasks, getFinishedTasks, getTaskCountdown, formatTaskCountdown, toggleTaskStatus } from '../../common/task'
-import { getTasks, ensureStorageReady, refreshTasksFromStorage, syncMockDataSetting } from '../../common/storage'
+import { getOverdueTasks, getTodayTasks, getWeekTasks, getFutureTasks, getFinishedTasks, getHistoryTasks, getTaskCountdown, formatTaskCountdown, toggleTaskStatus } from '../../common/task'
+import { getTasks, getTaskHistoryDays, ensureStorageReady, refreshTasksFromStorage, syncMockDataSetting } from '../../common/storage'
 import { getNow, parseDateTime } from '../../common/time'
 
 export default {
@@ -372,40 +372,43 @@ export default {
   loadTasks() {
     const now = getNow()
 
-    // 已逾期待办
-    this.overdueTasks = getOverdueTasks(now).map(t => ({
+    // 获取历史待办 ID 集合
+    const historyIds = getHistoryTasks(now, getTaskHistoryDays()).map(t => t.id)
+
+    // 已逾期待办（排除已归入历史的）
+    this.overdueTasks = getOverdueTasks(now).filter(t => !historyIds.includes(t.id)).map(t => ({
       ...t,
       deadlineText: this.formatDeadline(t.deadline),
       countdown: getTaskCountdown(t, now),
       countdownText: formatTaskCountdown(t, now)
     }))
 
-    // 今日待办
-    this.todayTasks = getTodayTasks(now).map(t => ({
+    // 今日待办（排除已归入历史的）
+    this.todayTasks = getTodayTasks(now).filter(t => !historyIds.includes(t.id)).map(t => ({
       ...t,
       deadlineText: this.formatDeadline(t.deadline),
       countdown: getTaskCountdown(t, now),
       countdownText: formatTaskCountdown(t, now)
     }))
 
-    // 本周待办
-    this.weekTasks = getWeekTasks(now).map(t => ({
+    // 本周待办（排除已归入历史的）
+    this.weekTasks = getWeekTasks(now).filter(t => !historyIds.includes(t.id)).map(t => ({
       ...t,
       deadlineText: this.formatDeadline(t.deadline),
       countdown: getTaskCountdown(t, now),
       countdownText: formatTaskCountdown(t, now)
     }))
 
-    // 未来待办
-    this.futureTasks = getFutureTasks(now).map(t => ({
+    // 未来待办（排除已归入历史的）
+    this.futureTasks = getFutureTasks(now).filter(t => !historyIds.includes(t.id)).map(t => ({
       ...t,
       deadlineText: this.formatDeadline(t.deadline),
       countdown: getTaskCountdown(t, now),
       countdownText: formatTaskCountdown(t, now)
     }))
 
-    // 已完成
-    this.finishedTasks = getFinishedTasks().map(t => ({
+    // 已完成（排除已归入历史的）
+    this.finishedTasks = getFinishedTasks().filter(t => !historyIds.includes(t.id)).map(t => ({
       ...t,
       deadlineText: this.formatDeadline(t.deadline)
     }))

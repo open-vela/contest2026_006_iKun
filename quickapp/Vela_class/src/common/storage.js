@@ -616,6 +616,31 @@ export function clearHistoryExams(examIds) {
 }
 
 /**
+ * 批量删除待办
+ * @param {Array<string>} taskIds 要删除的待办ID数组
+ * @returns {Promise<boolean>}
+ */
+export function clearHistoryTasks(taskIds) {
+  return new Promise((resolve, reject) => {
+    const oldTaskCache = taskCache
+
+    taskCache = taskCache.filter(t => !taskIds.includes(t.id))
+
+    storage.set({
+      key: STORAGE_KEYS.TASKS,
+      value: JSON.stringify(taskCache),
+      success: function () {
+        resolve(true)
+      },
+      fail: function () {
+        taskCache = oldTaskCache
+        reject(new Error('Failed to clear history tasks'))
+      }
+    })
+  })
+}
+
+/**
  * 更新考试（允许更新 Mock 考试）
  * @param {string} examId 考试ID
  * @param {object} examData 考试数据（不含id）

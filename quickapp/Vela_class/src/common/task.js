@@ -91,7 +91,7 @@ export function getFinishedTasks() {
 }
 
 /**
- * 获取历史待办（已完成且超过指定天数）
+ * 获取历史待办（已完成且截止时间超过指定天数）
  * @param {Date} now
  * @param {number} daysThreshold 归档天数阈值
  * @returns {Array}
@@ -102,12 +102,12 @@ export function getHistoryTasks(now, daysThreshold) {
 
   return tasks.filter(t => {
     if (!t.finished) return false
-    const finishedTime = parseDateTime(t.finishedAt) || parseDateTime(t.deadline)
-    if (!finishedTime) return false
-    return (now - finishedTime) >= thresholdMs
+    const deadline = parseDateTime(t.deadline)
+    if (!deadline) return false
+    return (now - deadline) >= thresholdMs
   }).sort((a, b) => {
-    const timeA = parseDateTime(a.finishedAt) || parseDateTime(a.deadline)
-    const timeB = parseDateTime(b.finishedAt) || parseDateTime(b.deadline)
+    const timeA = parseDateTime(a.deadline)
+    const timeB = parseDateTime(b.deadline)
     return timeB - timeA
   })
 }
