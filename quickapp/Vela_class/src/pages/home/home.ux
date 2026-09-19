@@ -3,7 +3,7 @@
     <!-- 顶部时间 -->
     <div class="header">
       <div if="{{ semesterWeek > 0 }}" class="semester-row">
-        <text class="semester-text">第{{ semesterWeek }}周/16周</text>
+        <text class="semester-text">第{{ semesterWeek }}周/{{ semesterTotalWeeks }}周</text>
         <progress class="semester-progress" percent="{{ semesterProgress }}"></progress>
       </div>
       <text if="{{ semesterWeek === 0 }}" class="semester-empty">学期未开始</text>
@@ -342,7 +342,7 @@
 import router from '@system.router'
 import vibrator from '@system.vibrator'
 import prompt from '@system.prompt'
-import { getCurrentCourse, getNextCourse, getNextCourseAcrossDays, getCourseProgress, getCourseRemainingTime, getMinutesUntilStart, getTodayCourses, isTodayCoursesFinished, calculateCurrentWeek } from '../../common/schedule'
+import { getCurrentCourse, getNextCourse, getNextCourseAcrossDays, getCourseProgress, getCourseRemainingTime, getMinutesUntilStart, getTodayCourses, isTodayCoursesFinished, calculateCurrentWeek, getSemesterTotalWeeks } from '../../common/schedule'
 import { getNearestExam, getUpcomingExams, getExamCountdown, getExamSummary } from '../../common/exam'
 import { getTasks, getTaskSummary } from '../../common/task'
 import { getNow, formatTime, formatFullDate, parseTimeToDate, parseDateTime } from '../../common/time'
@@ -371,6 +371,8 @@ export default {
     todayCourseCount: 0,
     semesterWeek: 0,
     semesterProgress: 0,
+    semesterTotalWeeks: 20,
+    isInitialized: false,
     timeTimer: null,
     courseTimer: null,
     examTimer: null,
@@ -390,16 +392,20 @@ export default {
         this.updateCourseStatus()
         this.startTimers()
         this.checkReminders()
+        this.isInitialized = true
       })
       .catch(() => {
         this.updateStaticSummary()
         this.updateCourseStatus()
         this.startTimers()
         this.checkReminders()
+        this.isInitialized = true
       })
   },
 
   onShow() {
+    if (!this.isInitialized) return
+
     ensureStorageReady()
       .then(() => syncMockDataSetting())
       .then(() => Promise.all([
@@ -486,8 +492,9 @@ export default {
     // 学期周次计算
     const currentWeek = calculateCurrentWeek(now)
     this.semesterWeek = currentWeek
+    this.semesterTotalWeeks = getSemesterTotalWeeks()
     if (currentWeek > 0) {
-      this.semesterProgress = Math.round(currentWeek / 16 * 100)
+      this.semesterProgress = Math.round(currentWeek / this.semesterTotalWeeks * 100)
     } else {
       this.semesterProgress = 0
     }

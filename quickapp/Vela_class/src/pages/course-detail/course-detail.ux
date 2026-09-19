@@ -327,7 +327,8 @@ export default {
     canDelete: false,
     deleteConfirming: false,
     deleting: false,
-    showStatus: true
+    showStatus: true,
+    isInitialized: false
   },
 
   onInit() {
@@ -337,14 +338,18 @@ export default {
     ensureStorageReady()
       .then(() => {
         this.loadCourse()
+        this.isInitialized = true
       })
       .catch((err) => {
         console.error('Failed to initialize storage:', err)
         this.loadCourse()
+        this.isInitialized = true
       })
   },
 
   onShow() {
+    if (!this.isInitialized) return
+
     ensureStorageReady()
       .then(() => refreshCoursesFromStorage())
       .then(() => this.loadCourse())

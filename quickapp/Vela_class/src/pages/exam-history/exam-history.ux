@@ -521,11 +521,13 @@ export default {
 
   toggleSelect(examId) {
     const index = this.selectedIds.indexOf(examId)
+    const newIds = [...this.selectedIds]
     if (index !== -1) {
-      this.selectedIds.splice(index, 1)
+      newIds.splice(index, 1)
     } else {
-      this.selectedIds.push(examId)
+      newIds.push(examId)
     }
+    this.selectedIds = newIds
   },
 
   onSelectAll() {

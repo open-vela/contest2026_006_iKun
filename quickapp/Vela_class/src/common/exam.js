@@ -134,8 +134,8 @@ export function getExamStatus(exam, now) {
   if (now >= examDate) return 'ongoing'
 
   // 判断是否是今天
-  const examDay = new Date(exam.date)
-  if (examDay.toDateString() === now.toDateString()) return 'today'
+  const examDay = parseDateTime(`${exam.date}T00:00:00`)
+  if (examDay && examDay.toDateString() === now.toDateString()) return 'today'
 
   return 'upcoming'
 }
