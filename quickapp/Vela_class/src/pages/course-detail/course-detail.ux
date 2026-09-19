@@ -306,7 +306,7 @@
 
 <script>
 import router from '@system.router'
-import { getCourses, ensureStorageReady, refreshCoursesFromStorage, isUserCreatedCourse, deleteCourse } from '../../common/storage'
+import { getCourses, ensureStorageReady, refreshCoursesFromStorage, deleteCourse } from '../../common/storage'
 import { getCourseStatus, getCourseProgress, getCourseRemainingTime, getMinutesUntilStart, formatCourseWeeks } from '../../common/schedule'
 import { getNow } from '../../common/time'
 

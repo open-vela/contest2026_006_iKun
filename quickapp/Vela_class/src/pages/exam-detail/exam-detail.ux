@@ -267,7 +267,7 @@
 
 <script>
 import router from '@system.router'
-import { getExams, ensureStorageReady, refreshExamsFromStorage, isUserCreatedExam, deleteExam } from '../../common/storage'
+import { getExams, ensureStorageReady, refreshExamsFromStorage, deleteExam } from '../../common/storage'
 import { getExamCountdown, formatExamDate } from '../../common/exam'
 import { getNow, parseDateTime } from '../../common/time'
 

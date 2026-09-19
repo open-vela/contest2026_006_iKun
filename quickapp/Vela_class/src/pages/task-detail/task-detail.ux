@@ -311,7 +311,7 @@
 
 <script>
 import router from '@system.router'
-import { getTasks, updateTaskStatus, ensureStorageReady, refreshTasksFromStorage, isUserCreatedTask, deleteTask } from '../../common/storage'
+import { getTasks, updateTaskStatus, ensureStorageReady, refreshTasksFromStorage, deleteTask } from '../../common/storage'
 import { getTaskCountdown, formatTaskCountdown, getTaskTypeText } from '../../common/task'
 import { getNow, parseDateTime } from '../../common/time'
 

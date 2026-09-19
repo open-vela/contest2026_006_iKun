@@ -508,10 +508,6 @@ export default {
     return false
   },
 
-  isUserExam(examId) {
-    return true
-  },
-
   onManageClick() {
     this.selectMode = true
     this.selectedIds = []
