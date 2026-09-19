@@ -329,7 +329,8 @@ export default {
     isUpdating: false,
     canDelete: false,
     deleteConfirming: false,
-    deleting: false
+    deleting: false,
+    isInitialized: false
   },
 
   onInit() {
@@ -337,14 +338,18 @@ export default {
       .then(() => refreshTasksFromStorage())
       .then(() => {
         this.loadTask()
+        this.isInitialized = true
       })
       .catch((err) => {
         console.error('Failed to initialize storage:', err)
         this.loadTask()
+        this.isInitialized = true
       })
   },
 
   onShow() {
+    if (!this.isInitialized) return
+
     ensureStorageReady()
       .then(() => refreshTasksFromStorage())
       .then(() => this.loadTask())

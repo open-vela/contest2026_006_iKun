@@ -283,7 +283,8 @@ export default {
     isFinished: false,
     canDelete: false,
     deleteConfirming: false,
-    deleting: false
+    deleting: false,
+    isInitialized: false
   },
 
   onInit() {
@@ -291,14 +292,18 @@ export default {
       .then(() => refreshExamsFromStorage())
       .then(() => {
         this.loadExam()
+        this.isInitialized = true
       })
       .catch((err) => {
         console.error('Failed to initialize storage:', err)
         this.loadExam()
+        this.isInitialized = true
       })
   },
 
   onShow() {
+    if (!this.isInitialized) return
+
     ensureStorageReady()
       .then(() => refreshExamsFromStorage())
       .then(() => this.loadExam())
