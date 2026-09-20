@@ -508,6 +508,10 @@ export default {
     return false
   },
 
+  isUserExam(examId) {
+    return true
+  },
+
   onManageClick() {
     this.selectMode = true
     this.selectedIds = []
@@ -521,13 +525,11 @@ export default {
 
   toggleSelect(examId) {
     const index = this.selectedIds.indexOf(examId)
-    const newIds = [...this.selectedIds]
     if (index !== -1) {
-      newIds.splice(index, 1)
+      this.selectedIds.splice(index, 1)
     } else {
-      newIds.push(examId)
+      this.selectedIds.push(examId)
     }
-    this.selectedIds = newIds
   },
 
   onSelectAll() {

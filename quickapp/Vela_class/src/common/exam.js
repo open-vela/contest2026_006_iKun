@@ -109,15 +109,13 @@ export function getExamCountdown(exam, now) {
 /**
  * 获取考试日期格式化
  * @param {object} exam
- * @returns {string} 如：8月21日 周三 · 09:00
+ * @returns {string} 如：8月21日 · 09:00
  */
 export function formatExamDate(exam) {
   const date = parseDateTime(`${exam.date}T00:00:00`)
   const month = date.getMonth() + 1
   const day = date.getDate()
-  const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
-  const weekday = days[date.getDay()]
-  return `${month}月${day}日 ${weekday} · ${exam.startTime}`
+  return `${month}月${day}日 · ${exam.startTime}`
 }
 
 /**
@@ -134,8 +132,8 @@ export function getExamStatus(exam, now) {
   if (now >= examDate) return 'ongoing'
 
   // 判断是否是今天
-  const examDay = parseDateTime(`${exam.date}T00:00:00`)
-  if (examDay && examDay.toDateString() === now.toDateString()) return 'today'
+  const examDay = new Date(exam.date)
+  if (examDay.toDateString() === now.toDateString()) return 'today'
 
   return 'upcoming'
 }

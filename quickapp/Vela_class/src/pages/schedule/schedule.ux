@@ -69,7 +69,7 @@
             <text class="week-number">{{ selectedWeek > 0 ? '第' + selectedWeek + '周' : '学期未开始' }}</text>
             <text if="{{ selectedWeek === currentWeek && currentWeek > 0 }}" class="current-mark">本周</text>
           </div>
-          <div class="week-arrow {{ selectedWeek >= semesterTotalWeeks ? 'arrow-disabled' : '' }}" onclick="nextWeek">
+          <div class="week-arrow {{ selectedWeek >= 16 ? 'arrow-disabled' : '' }}" onclick="nextWeek">
             <text class="arrow-text">›</text>
           </div>
         </div>
@@ -410,7 +410,6 @@
   flex-direction: row;
   align-items: flex-start;
   margin-bottom: 5px;
-  position: relative;
 }
 
 .timeline-time {
@@ -445,11 +444,11 @@
 
 .timeline-line {
   width: 2px;
+  height: 50px;
   background-color: #2B2B2B;
   position: absolute;
   left: 67px;
   top: 18px;
-  bottom: 0;
 }
 
 .line-gray {
@@ -562,7 +561,7 @@
 
 <script>
 import router from '@system.router'
-import { getTodayCourses, getCoursesByWeekday, getAllCoursesByWeekday, formatCourseWeeks, getCourseStatus, getCourseRemainingTime, calculateCurrentWeek, getSemesterTotalWeeks } from '../../common/schedule'
+import { getTodayCourses, getCoursesByWeekday, getAllCoursesByWeekday, formatCourseWeeks, getCourseStatus, getCourseRemainingTime, calculateCurrentWeek } from '../../common/schedule'
 import { getNow, getWeekdayNumber } from '../../common/time'
 import { ensureStorageReady, refreshCoursesFromStorage, refreshSemesterStartFromStorage, getSemesterWeek1Start, syncMockDataSetting } from '../../common/storage'
 
@@ -574,7 +573,6 @@ export default {
     selectedWeek: 1,
     selectedDay: 1,
     displayMonth: 0,
-    semesterTotalWeeks: 20,
     todayTitle: '',
     weekDayTitle: '',
     allDayTitle: '',
@@ -603,7 +601,6 @@ export default {
         const now = getNow()
         this.selectedDay = getWeekdayNumber(now)
         this.currentWeek = calculateCurrentWeek(now)
-        this.semesterTotalWeeks = getSemesterTotalWeeks()
         // 学期未开始时，默认显示第1周
         this.selectedWeek = this.currentWeek > 0 ? this.currentWeek : 1
 
@@ -750,7 +747,7 @@ export default {
   },
 
   nextWeek() {
-    if (this.selectedWeek < this.semesterTotalWeeks) {
+    if (this.selectedWeek < 16) {
       this.selectedWeek += 1
       const now = getNow()
       this.updateWeekDates(now)

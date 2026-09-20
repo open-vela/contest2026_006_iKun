@@ -430,6 +430,15 @@ export function addCourse(courseData) {
 }
 
 /**
+ * 判断是否为用户手动添加的课程（非默认 Mock 课程）
+ * @param {string} courseId
+ * @returns {boolean}
+ */
+export function isUserCreatedCourse(courseId) {
+  return !ORIGINAL_COURSE_IDS.has(courseId)
+}
+
+/**
  * 删除课程（允许删除 Mock 课程）
  * @param {string} courseId
  * @returns {Promise<boolean>}
@@ -540,6 +549,15 @@ export function addExam(examData) {
       }
     })
   })
+}
+
+/**
+ * 判断是否为用户手动添加的考试（非默认 Mock 考试）
+ * @param {string} examId
+ * @returns {boolean}
+ */
+export function isUserCreatedExam(examId) {
+  return !ORIGINAL_EXAM_IDS.has(examId)
 }
 
 /**
@@ -679,6 +697,15 @@ export function addTask(taskData) {
       }
     })
   })
+}
+
+/**
+ * 判断是否为用户手动添加的待办（非默认 Mock 待办）
+ * @param {string} taskId
+ * @returns {boolean}
+ */
+export function isUserCreatedTask(taskId) {
+  return !ORIGINAL_TASK_IDS.has(taskId)
 }
 
 /**

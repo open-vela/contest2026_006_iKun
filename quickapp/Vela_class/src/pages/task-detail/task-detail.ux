@@ -311,7 +311,7 @@
 
 <script>
 import router from '@system.router'
-import { getTasks, updateTaskStatus, ensureStorageReady, refreshTasksFromStorage, deleteTask } from '../../common/storage'
+import { getTasks, updateTaskStatus, ensureStorageReady, refreshTasksFromStorage, isUserCreatedTask, deleteTask } from '../../common/storage'
 import { getTaskCountdown, formatTaskCountdown, getTaskTypeText } from '../../common/task'
 import { getNow, parseDateTime } from '../../common/time'
 
@@ -329,8 +329,7 @@ export default {
     isUpdating: false,
     canDelete: false,
     deleteConfirming: false,
-    deleting: false,
-    isInitialized: false
+    deleting: false
   },
 
   onInit() {
@@ -338,18 +337,14 @@ export default {
       .then(() => refreshTasksFromStorage())
       .then(() => {
         this.loadTask()
-        this.isInitialized = true
       })
       .catch((err) => {
         console.error('Failed to initialize storage:', err)
         this.loadTask()
-        this.isInitialized = true
       })
   },
 
   onShow() {
-    if (!this.isInitialized) return
-
     ensureStorageReady()
       .then(() => refreshTasksFromStorage())
       .then(() => this.loadTask())
@@ -384,23 +379,8 @@ export default {
 
   formatDeadline(deadline) {
     const date = parseDateTime(deadline)
-    const now = getNow()
     const hours = String(date.getHours()).padStart(2, '0')
     const minutes = String(date.getMinutes()).padStart(2, '0')
-
-    // 判断是否是今天
-    if (date.toDateString() === now.toDateString()) {
-      return `今天 ${hours}:${minutes}`
-    }
-
-    // 判断是否是明天
-    const tomorrow = new Date(now)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    if (date.toDateString() === tomorrow.toDateString()) {
-      return `明天 ${hours}:${minutes}`
-    }
-
-    // 其他日期
     const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
     const month = date.getMonth() + 1
     const day = date.getDate()

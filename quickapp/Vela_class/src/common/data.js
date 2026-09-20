@@ -139,6 +139,47 @@ export const courses = [
     endTime: '19:35',
     classroom: '',
     weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+  },
+  // 周日测试课程（用于调试）
+  {
+    id: 'course_test_sunday_1',
+    name: '周日测试课程1',
+    teacher: '',
+    weekday: 7,
+    startTime: '08:00',
+    endTime: '09:35',
+    classroom: '教一楼101',
+    weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+  },
+  {
+    id: 'course_test_sunday_2',
+    name: '周日测试课程2',
+    teacher: '',
+    weekday: 7,
+    startTime: '13:30',
+    endTime: '15:05',
+    classroom: '教二楼202',
+    weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+  },
+  {
+    id: 'course_test_sunday_3',
+    name: '周日测试课程3',
+    teacher: '',
+    weekday: 7,
+    startTime: '15:20',
+    endTime: '16:55',
+    classroom: '实验楼303',
+    weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+  },
+  {
+    id: 'course_test_sunday_4',
+    name: '周日测试课程4',
+    teacher: '',
+    weekday: 7,
+    startTime: '18:00',
+    endTime: '19:35',
+    classroom: '实验楼404',
+    weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
   }
 ]
 

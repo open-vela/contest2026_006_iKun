@@ -192,7 +192,7 @@ export default {
     selectedTypeIndex: 0,
     dateDisplayRange: [],
     dateValueRange: [],
-    selectedDateIndex: 1,
+    selectedDateIndex: 0,
     deadlineTime: '23:59',
     keyboardHidden: true,
     currentInputField: ''
@@ -243,17 +243,6 @@ export default {
         const dateIndex = this.dateValueRange.findIndex(d => d === dateStr)
         if (dateIndex !== -1) {
           this.selectedDateIndex = dateIndex
-        } else {
-          // 原日期超出范围时，插入到数组开头
-          const date = parseDateTime(dateStr + 'T00:00:00')
-          if (date) {
-            const month = date.getMonth() + 1
-            const day = date.getDate()
-            const weekday = getWeekday(date)
-            this.dateDisplayRange.unshift(`${month}月${day}日 ${weekday}`)
-            this.dateValueRange.unshift(dateStr)
-            this.selectedDateIndex = 0
-          }
         }
         this.deadlineTime = timeStr
       }
@@ -278,7 +267,7 @@ export default {
     const displayRange = []
     const valueRange = []
 
-    for (let i = 0; i < 180; i++) {
+    for (let i = 0; i < 30; i++) {
       const date = new Date(now)
       date.setDate(date.getDate() + i)
       const month = date.getMonth() + 1

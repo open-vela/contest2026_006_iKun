@@ -521,13 +521,11 @@ export default {
 
   toggleSelect(taskId) {
     const index = this.selectedIds.indexOf(taskId)
-    const newIds = [...this.selectedIds]
     if (index !== -1) {
-      newIds.splice(index, 1)
+      this.selectedIds.splice(index, 1)
     } else {
-      newIds.push(taskId)
+      this.selectedIds.push(taskId)
     }
-    this.selectedIds = newIds
   },
 
   onSelectAll() {

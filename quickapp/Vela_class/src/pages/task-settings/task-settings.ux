@@ -196,8 +196,7 @@ export default {
     customDays: '',
     daysOptions: ['7天', '15天', '30天', '自定义'],
     keyboardHidden: true,
-    currentInputField: '',
-    isInitialized: false
+    currentInputField: ''
   },
 
   onInit() {
@@ -205,17 +204,13 @@ export default {
       .then(() => refreshTaskHistoryDaysFromStorage())
       .then(() => {
         this.initDaysSetting()
-        this.isInitialized = true
       })
       .catch(() => {
         this.initDaysSetting()
-        this.isInitialized = true
       })
   },
 
   onShow() {
-    if (!this.isInitialized) return
-
     ensureStorageReady()
       .then(() => refreshTaskHistoryDaysFromStorage())
       .then(() => {
