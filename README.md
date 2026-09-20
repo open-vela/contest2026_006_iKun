@@ -10,7 +10,7 @@
 
 - 「智能状态感知」「待办分组」等为**本地时间规则与数据逻辑**，不是设备端大模型推理，也不依赖云端对话。
 - 提醒仅在**应用处于前台**时由页面定时器触发；未打开应用时**不会**产生系统级通知（公开 Vela JS 接口未提供第三方通用系统通知/闹钟 API，后台运行也不含定时提醒）。
-- 当前仓内打包产物为 **debug** rpk；参赛正式提交需自行生成 **release.rpk**。
+- 参赛生产包：`quickapp/Vela_class/release/com.application.watch.demo.release.1.0.0.rpk`（`npm run release` / IDE 发布生成；`dist/` 与 `sign/` 本地目录已 gitignore，私钥不入仓）。
 
 核心能力（均有对应源码）：
 
@@ -46,7 +46,8 @@ contest2026_006_iKun/
 │   │   └── pages/                    # home、schedule、exam、task 及详情/添加/设置/debug 等
 │   ├── skills/vela-class-home-status/
 │   │   └── SKILL.md                  # 自定义 Skill（对应已实现的首页状态 + 应用内提醒）
-│   └── dist/                         # 现有：com.application.watch.demo.debug.1.0.0.rpk
+│   └── release/                      # 参赛生产包（入仓）
+│       └── com.application.watch.demo.release.1.0.0.rpk
 ├── quickapp/hello_quickapp/          # 组委会快应用示例，非本作品
 ├── app/hello_app/                    # 组委会示例，本作品未使用
 ├── board/contest_board/              # 组委会示例，本作品未使用
@@ -70,17 +71,19 @@ contest2026_006_iKun/
 cd quickapp/Vela_class
 npm install
 npm run start    # aiot start --watch
-npm run build    # 产出 debug 包到 dist/
-npm run release  # 生产包（提交用，需签名/发布配置）
+npm run build    # debug 包 → dist/（gitignore，仅本地调试）
+npm run release  # 生产包（需 sign/ 证书；产物默认在 dist/）
 ```
 
-当前仓内已有：
+**仓内参赛生产包（请优先使用）：**
 
 ```text
-quickapp/Vela_class/dist/com.application.watch.demo.debug.1.0.0.rpk
+quickapp/Vela_class/release/com.application.watch.demo.release.1.0.0.rpk
 ```
 
-> **尚无 release.rpk**。按大赛要求，提交前请在 IDE「发布」或 `npm run release` 生成生产包，并与源码一并放入本仓。
+包名与 `manifest.json` 一致：`com.application.watch.demo`。
+
+说明：`quickapp/Vela_class/.gitignore` 忽略了 `/dist` 与 `/sign`，故 release 包复制到 **`release/`** 目录入仓；签名私钥不提交。本地再执行 `npm run release` 后，如需更新入仓包，将 `dist/*release*.rpk` 复制到 `release/` 覆盖同名文件即可。
 
 ### 方式 B：openvela 模拟器部署（官方通用流程）
 
