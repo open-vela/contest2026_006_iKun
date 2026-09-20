@@ -267,7 +267,7 @@
 
 <script>
 import router from '@system.router'
-import { getExams, ensureStorageReady, refreshExamsFromStorage, isUserCreatedExam, deleteExam } from '../../common/storage'
+import { getExams, ensureStorageReady, refreshExamsFromStorage, deleteExam } from '../../common/storage'
 import { getExamCountdown, formatExamDate } from '../../common/exam'
 import { getNow, parseDateTime } from '../../common/time'
 
@@ -283,7 +283,8 @@ export default {
     isFinished: false,
     canDelete: false,
     deleteConfirming: false,
-    deleting: false
+    deleting: false,
+    isInitialized: false
   },
 
   onInit() {
@@ -291,14 +292,18 @@ export default {
       .then(() => refreshExamsFromStorage())
       .then(() => {
         this.loadExam()
+        this.isInitialized = true
       })
       .catch((err) => {
         console.error('Failed to initialize storage:', err)
         this.loadExam()
+        this.isInitialized = true
       })
   },
 
   onShow() {
+    if (!this.isInitialized) return
+
     ensureStorageReady()
       .then(() => refreshExamsFromStorage())
       .then(() => this.loadExam())

@@ -7,6 +7,25 @@ import { getCourses, getSemesterWeek1Start } from './storage'
 import { getNow, parseTimeToDate, diffMinutes, getWeekdayNumber } from './time'
 
 /**
+ * 获取学期总周数（动态计算，取所有课程 weeks 中的最大值）
+ * @returns {number} 学期总周数，默认20
+ */
+export function getSemesterTotalWeeks() {
+  const courses = getCourses()
+  if (!courses || courses.length === 0) return 20
+
+  let maxWeek = 0
+  courses.forEach(c => {
+    if (c.weeks && c.weeks.length > 0) {
+      const courseMax = Math.max(...c.weeks)
+      if (courseMax > maxWeek) maxWeek = courseMax
+    }
+  })
+
+  return maxWeek > 0 ? maxWeek : 20
+}
+
+/**
  * 获取学期第一周的周一日期
  * @returns {Date|null}
  */
@@ -106,7 +125,7 @@ export function getAllCoursesByWeekday(weekday) {
 export function formatCourseWeeks(weeks) {
   if (!weeks || weeks.length === 0) return ''
 
-  const totalWeeks = 16
+  const totalWeeks = getSemesterTotalWeeks()
   const allWeeks = Array.from({ length: totalWeeks }, (_, i) => i + 1)
 
   const sorted = [...new Set(weeks)].sort((a, b) => a - b)
